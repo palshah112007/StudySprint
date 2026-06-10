@@ -1,0 +1,292 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Timer,
+  Bot,
+  Trophy,
+  BarChart3,
+  Users,
+  User,
+  ShieldCheck,
+  Menu,
+  X,
+  Sparkles,
+  Volume2,
+  VolumeX,
+  Brain,
+  Layers,
+  FileText,
+  ListChecks,
+  Sun,
+  Moon,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
+import { AuthModal } from "@/components/ui/AuthModal";
+import { useSound } from "@/lib/useSound";
+import { setSoundEnabled } from "@/lib/useSound";
+import { loadSoundPreferences, saveSoundPreferences } from "@/lib/persistence";
+import { useTheme } from "@/lib/theme";
+
+const navLinks = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/focus-room", label: "Focus Room", icon: Timer },
+  { href: "/quiz", label: "Quiz", icon: Brain },
+  { href: "/flashcards", label: "Flashcards", icon: Layers },
+  { href: "/notes", label: "Notes", icon: FileText },
+  { href: "/tasks", label: "Tasks", icon: ListChecks },
+  { href: "/ai-assistant", label: "AI Assistant", icon: Bot },
+  { href: "/gamification", label: "Gamification", icon: Trophy },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/social", label: "Community", icon: Users },
+  { href: "/profile", label: "Profile", icon: User },
+  { href: "/admin", label: "Admin", icon: ShieldCheck },
+];
+
+export function Navigation() {
+  const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [authTab, setAuthTab] = useState<"signin" | "signup">("signin");
+  const [soundOn, setSoundOn] = useState(true);
+  const { playSound } = useSound();
+  const { theme, toggleTheme } = useTheme();
+
+  const isLanding = pathname === "/";
+
+  // Show auth modal when custom event fires from landing page
+  useEffect(() => {
+    const handleOpenAuth = (e: CustomEvent) => {
+      const tab = e.detail?.tab || "signin";
+      setAuthTab(tab);
+      setShowAuth(true);
+    };
+    window.addEventListener("studysprint-open-auth", handleOpenAuth as EventListener);
+    return () => window.removeEventListener("studysprint-open-auth", handleOpenAuth as EventListener);
+  }, []);
+
+  // Load saved sound preference
+  useEffect(() => {
+    const prefs = loadSoundPreferences();
+    setSoundOn(prefs.enabled);
+  }, []);
+
+  // Track scroll for glass effect
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const toggleSound = () => {
+    const newState = !soundOn;
+    setSoundOn(newState);
+    setSoundEnabled(newState);
+    saveSoundPreferences({ enabled: newState, volume: newState ? loadSoundPreferences().volume : 0 });
+    if (newState) playSound("click");
+  };
+
+  return (
+    <>
+      <nav
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+          isScrolled || !isLanding
+            ? "bg-surface-950/80 backdrop-blur-xl border-b border-primary-500/10 shadow-lg shadow-black/10"
+            : "bg-transparent"
+        )}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <Link
+              href="/"
+              className="flex items-center gap-2.5 group shrink-0"
+              onClick={() => isLanding && playSound("click")}
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-primary-500/25 transition-shadow">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-lg font-bold text-surface-100">
+                Study<span className="gradient-text">Sprint</span>
+              </span>
+            </Link>
+
+            {/* Desktop Nav */}
+            <div className="hidden lg:flex items-center gap-1 overflow-x-auto">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all",
+                    pathname === link.href
+                      ? "text-surface-100 bg-primary-500/10"
+                      : "text-surface-400 hover:text-surface-200 hover:bg-surface-800/50"
+                  )}
+                  onClick={() => playSound("click")}
+                >
+                  <link.icon className="w-4 h-4" />
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Right side */}
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <button
+                onClick={() => { playSound("click"); toggleTheme(); }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-surface-500 hover:text-surface-300 hover:bg-surface-800/50 transition-all"
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                <motion.div
+                  key={theme}
+                  initial={{ rotate: -90, scale: 0 }}
+                  animate={{ rotate: 0, scale: 1 }}
+                  transition={{ duration: 0.3, type: "spring" }}
+                >
+                  {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </motion.div>
+              </button>
+
+              {/* Sound Toggle */}
+              <button
+                onClick={toggleSound}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-surface-500 hover:text-surface-300 hover:bg-surface-800/50 transition-all"
+                title={soundOn ? "Mute sounds (M)" : "Enable sounds (M)"}
+                aria-label={soundOn ? "Mute sounds" : "Enable sounds"}
+              >
+                {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </button>
+
+              {/* Sign In */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hidden sm:flex"
+                onClick={() => {
+                  playSound("click");
+                  setAuthTab("signin");
+                  setShowAuth(true);
+                }}
+              >
+                Sign In
+              </Button>
+
+              {/* Get Started */}
+              <Button
+                variant="gradient"
+                size="sm"
+                glow
+                className="hidden sm:flex"
+                onClick={() => {
+                  playSound("click");
+                  setAuthTab("signup");
+                  setShowAuth(true);
+                }}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Get Started
+              </Button>
+
+              {/* Mobile menu button */}
+              <button
+                className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center text-surface-400 hover:text-surface-200 hover:bg-surface-800/50 transition-all"
+                onClick={() => {
+                  playSound("click");
+                  setIsOpen(!isOpen);
+                }}
+                aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+                aria-expanded={isOpen}
+              >
+                {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="lg:hidden border-t border-surface-800/50 bg-surface-950/95 backdrop-blur-xl"
+            >
+              <div className="px-4 py-4 space-y-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => {
+                      setIsOpen(false);
+                      playSound("click");
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all",
+                      pathname === link.href
+                        ? "text-surface-100 bg-primary-500/10"
+                        : "text-surface-400 hover:text-surface-200 hover:bg-surface-800/50"
+                    )}
+                  >
+                    <link.icon className="w-4 h-4" />
+                    {link.label}
+                  </Link>
+                ))}
+                <div className="pt-3 flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => {
+                      playSound("click");
+                      setAuthTab("signin");
+                      setShowAuth(true);
+                      setIsOpen(false);
+                    }}
+                  >
+                    Sign In
+                  </Button>
+                  <Button
+                    variant="gradient"
+                    size="sm"
+                    glow
+                    className="flex-1"
+                    onClick={() => {
+                      playSound("click");
+                      setAuthTab("signup");
+                      setShowAuth(true);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Get Started
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuth}
+        onClose={() => setShowAuth(false)}
+        defaultTab={authTab}
+      />
+
+      {/* Spacer for fixed nav */}
+      {!isLanding && <div className="h-16" />}
+    </>
+  );
+}
