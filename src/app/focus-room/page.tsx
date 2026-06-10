@@ -34,10 +34,10 @@ const focusDurations = [
 ];
 
 const backgrounds = [
-  { id: "default", name: "Deep Space", icon: Sparkles, gradient: "from-surface-950 via-primary-950/30 to-surface-950" },
-  { id: "ocean", name: "Ocean Depths", icon: Waves, gradient: "from-surface-950 via-blue-950/30 to-surface-950" },
-  { id: "forest", name: "Forest", icon: TreePine, gradient: "from-surface-950 via-emerald-950/30 to-surface-950" },
-  { id: "clouds", name: "Clouds", icon: Cloud, gradient: "from-surface-950 via-surface-800/50 to-surface-950" },
+  { id: "default", name: "Deep Space", icon: Sparkles, gradient: "from-surface-950 via-primary-950/30 to-surface-950", orb: "orb-deep-space" },
+  { id: "ocean", name: "Ocean Depths", icon: Waves, gradient: "from-surface-950 via-blue-950/30 to-surface-950", orb: "orb-ocean" },
+  { id: "forest", name: "Forest", icon: TreePine, gradient: "from-surface-950 via-emerald-950/30 to-surface-950", orb: "orb-forest" },
+  { id: "clouds", name: "Clouds", icon: Cloud, gradient: "from-surface-950 via-surface-800/50 to-surface-950", orb: "orb-deep-space" },
 ];
 
 const sounds = [
@@ -228,6 +228,12 @@ export default function FocusRoomPage() {
               focusScore: Math.floor(80 + Math.random() * 15),
             });
 
+            // Dispatch XP toast event
+            const sessionXp = Math.round(selectedDuration.mins * 2);
+            window.dispatchEvent(new CustomEvent("studysprint-xp-earned", {
+              detail: { xp: sessionXp, message: `Focus Session Complete! +${sessionXp} XP` },
+            }));
+
             toast("🎉 Session complete! Great focus! Take a 5-minute break.", "success");
             return 5 * 60;
           }
@@ -296,8 +302,13 @@ export default function FocusRoomPage() {
         `bg-gradient-to-b ${selectedBg.gradient}`
       )}
     >
-      {/* Animated particles */}
+      {/* Animated gradient orb */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className={cn(
+          "absolute top-1/3 left-1/3 w-[400px] h-[400px] rounded-full blur-[120px]",
+          selectedBg.orb
+        )} />
+
         {particles.map((particle) => (
           <motion.div
             key={particle.id}

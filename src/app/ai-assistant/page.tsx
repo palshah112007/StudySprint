@@ -139,7 +139,7 @@ export default function AIAssistantPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = (content: string) => {
+  const handleSend = async (content: string) => {
     if (!content.trim() || isTyping) return;
 
     const userMsg: Message = {
@@ -157,100 +157,167 @@ export default function AIAssistantPage() {
     // Check if user wants a quiz
     const { isQuiz, subject, topic, fromNotes, difficulty } = detectQuizRequest(content);
 
-    setTimeout(() => {
-      let response = "";
-      let generatedQuiz: GeneratedQuiz | undefined;
-
+    try {
       if (isQuiz) {
         if (fromNotes) {
-          // Generate quiz from user's notes
           const notes = loadNotes();
           if (notes.length === 0) {
-            response = "📝 You don't have any notes yet! Create some notes first, then I can generate a quiz based on their content.\n\n💡 **Tip:** Go to the Notes page to create study notes, then come back and say \"Generate a quiz from my notes\"!";
-          } else {
-            // Combine all note content
-            const allContent = notes.map((n) => n.content).join(" ");
-            // Detect subject from notes or use the most common one
-            const subjectCounts: Record<string, number> = {};
-            notes.forEach((n) => { subjectCounts[n.subject] = (subjectCounts[n.subject] || 0) + 1; });
-            const topSubject = Object.entries(subjectCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "General";
-            const detectedSubject = subject || topSubject;
-
-            // Generate questions from note content
-            const questions = generateQuizFromNotes(allContent, detectedSubject, 10);
-            if (questions.length > 0) {
-              const quiz: GeneratedQuiz = {
-                id: `notes-quiz-${Date.now()}`,
-                name: `${detectedSubject} Quiz from Notes`,
-                subject: detectedSubject,
-                icon: "📝",
-                questions,
-                difficulty: "medium",
-                estimatedTime: Math.ceil(questions.length * 1.5),
-                xpReward: questions.length * 15,
-                generatedAt: new Date().toISOString(),
-                aiGenerated: true,
-              };
-              generatedQuiz = quiz;
-              addGeneratedQuiz(quiz);
-              setGeneratedQuizzes(loadGeneratedQuizzes());
-              response = `🎉 I've analyzed your **${notes.length} notes** and generated a **${quiz.name}** with **${quiz.questions.length} questions**!\n\nThe questions are based on keywords and topics found in your notes. You can start the quiz right from here or find it in the Quiz Center.\n\nGood luck! 🚀`;
-              playSound("achievement");
-              toast(`🧠 Quiz generated from notes: ${quiz.name}`, "success");
-            } else {
-              response = "I couldn't generate questions from your notes. Try adding more detailed notes with specific topics, terms, or concepts.\n\n💡 **Tip:** Include key terms, definitions, and formulas in your notes for better quiz generation!";
-            }
+            const fallbackResponse = "📝 You don't have any notes yet! Create some notes first, then I can generate a quiz based on their content.\n\n💡 **Tip:** Go to the Notes page to create study notes, then come back and say \"Generate a quiz from my notes\"!";
+            setMessages((prev) => [...prev, {
+              id: Math.random().toString(36).substring(7),
+              role: "assistant",
+              content: fallbackResponse,
+              timestamp: new Date(),
+            }]);
+            setIsTyping(false);
+            playSound("messageReceived");
+            return;
           }
-        } else if (subject) {
-          // Generate a real quiz from question bank
-          const quiz = generateQuiz(subject, topic, difficulty, 10);
+          const allContent = notes.map((n) => n.content).join(" ");
+          const subjectCounts: Record<string, number> = {};
+          notes.forEach((n) => { subjectCounts[n.subject] = (subjectCounts[n.subject] || 0) + 1; });
+          const topSubject = Object.entries(subjectCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "General";
+          const detectedSubject = subject || topSubject;
+          const questions = await generateQuizFromNotes(allContent, detectedSubject, 10);
+          if (questions.length > 0) {
+            const quiz: GeneratedQuiz = {
+              id: `notes-quiz-${Date.now()}`,
+              name: `${detectedSubject} Quiz from Notes`,
+              subject: detectedSubject,
+              icon: "📝",
+              questions,
+              difficulty: "medium",
+              estimatedTime: Math.ceil(questions.length * 1.5),
+              xpReward: questions.length * 15,
+              generatedAt: new Date().toISOString(),
+              aiGenerated: true,
+            };
+            addGeneratedQuiz(quiz);
+            setGeneratedQuizzes(loadGeneratedQuizzes());
+            const msg: Message = {
+              id: Math.random().toString(36).substring(7),
+              role: "assistant",
+              content: `🎉 I've analyzed your **${notes.length} notes** and generated a **${quiz.name}** with **${quiz.questions.length} questions**!\n\nThe questions are based on keywords and topics found in your notes. You can start the quiz right from here or find it in the Quiz Center.\n\nGood luck! 🚀`,
+              timestamp: new Date(),
+              generatedQuiz: quiz,
+            };
+            setMessages((prev) => [...prev, msg]);
+            setIsTyping(false);
+            playSound("achievement");
+            toast(`🧠 Quiz generated from notes: ${quiz.name}`, "success");
+          }
+          return;
+        }
+
+        // Use the async generateQuiz wrapper (calls /api/ai/quiz, falls back to hardcoded)
+        const subjectsList = getAllSubjects();
+        if (subject) {
+          const quiz = await generateQuiz(subject, topic, difficulty, 10);
           if (quiz) {
-            generatedQuiz = quiz;
             addGeneratedQuiz(quiz);
             setGeneratedQuizzes(loadGeneratedQuizzes());
             const diffLabel = difficulty === "mixed" ? "mixed difficulty" : difficulty;
-            response = `🎉 I've generated a **${quiz.name}** quiz with **${quiz.questions.length} questions** covering ${subject} at **${diffLabel}** level!\n\nThe quiz includes detailed explanations for each answer. You can start the quiz right from here or find it in the Quiz Center.\n\nGood luck! 🚀`;
+            const msg: Message = {
+              id: Math.random().toString(36).substring(7),
+              role: "assistant",
+              content: `🎉 I've generated a **${quiz.name}** quiz with **${quiz.questions.length} questions** covering ${subject} at **${diffLabel}** level!\n\nThe quiz includes detailed explanations for each answer. You can start the quiz right from here or find it in the Quiz Center.\n\nGood luck! 🚀`,
+              timestamp: new Date(),
+              generatedQuiz: quiz,
+            };
+            setMessages((prev) => [...prev, msg]);
+            setIsTyping(false);
             playSound("achievement");
             toast(`🧠 Quiz generated: ${quiz.name}`, "success");
-          } else {
-            response = `I couldn't find specific questions for "${topic}" in ${subject}. Try asking for a general ${subject} quiz, or specify a different topic like "Calculus", "Quantum Mechanics", or "Cell Biology".`;
+            return;
           }
-        } else {
-          // Ask user to specify a subject
-          const subjects = getAllSubjects();
-          response = `I'd love to generate a quiz for you! Which subject would you like?\n\n${subjects.map((s) => `• **${s}**`).join("\n")}\n\nJust say "Generate a quiz on [subject]" and I'll create real questions for you!`;
         }
-      } else {
-        // Regular AI responses
-        const responses: Record<string, string> = {
-          summarize: "I've analyzed your notes and created a comprehensive summary with key concepts, formulas, and important definitions. The main topics covered are: differentiation rules, integration techniques, and limit theorems.\n\n💡 **Tip:** Say \"Generate a quiz on [subject]\" to test your understanding!",
-          flashcard: "I've created 15 flashcards from your Biology materials covering cellular respiration, photosynthesis, and DNA replication. Each card includes key terms, definitions, and memory aids.\n\n💡 **Tip:** Say \"Generate a quiz on Biology\" to test your knowledge!",
-          essay: "I can help structure your essay. Let's start with an outline:\n\n1. **Introduction** — Strong hook + thesis statement\n2. **Body Paragraph 1** — First main point with evidence\n3. **Body Paragraph 2** — Second main point with evidence\n4. **Body Paragraph 3** — Counterargument & rebuttal\n5. **Conclusion** — Restate thesis + final thoughts\n\n💡 **Tip:** Say \"Generate a quiz on Literature\" to improve your analytical skills!",
-          schedule: "Based on your upcoming deadlines and study patterns, here's an optimized study schedule:\n\n📅 **Monday:** Mathematics (2h) + Physics (1h)\n📅 **Tuesday:** Computer Science (3h)\n📅 **Wednesday:** Biology (2h) + Chemistry (1h)\n📅 **Thursday:** Review day — Flashcards\n📅 **Friday:** Practice quizzes on weak areas\n📅 **Weekend:** Deep focus sessions +休息\n\n💡 **Tip:** Say \"Generate a quiz on [subject]\" for each study day!",
-          progress: "Your analytics show strong progress in Mathematics (78%) and Computer Science (85%). Physics (65%) needs attention.\n\n📊 **Recommendations:**\n• 3 additional Physics sessions this week\n• Focus on Quantum Mechanics and Thermodynamics\n• Daily flashcard review for Biology\n\n💡 **Tip:** Say \"Generate a quiz on Physics\" to practice your weak areas!",
-        };
 
-        response = "I'll help you with that! Let me analyze your request and provide the best assistance.\n\n💡 **Pro tip:** Say \"Generate a quiz on [subject]\" to create real practice questions for any subject!";
-        for (const [key, value] of Object.entries(responses)) {
-          if (content.toLowerCase().includes(key)) {
-            response = value;
-            break;
-          }
-        }
+        // No subject detected
+        const msg: Message = {
+          id: Math.random().toString(36).substring(7),
+          role: "assistant",
+          content: `I'd love to generate a quiz for you! Which subject would you like?\n\n${subjectsList.map((s) => `• **${s}**`).join("\n")}\n\nJust say "Generate a quiz on [subject]" and I'll create real questions for you!`,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, msg]);
+        setIsTyping(false);
+        playSound("messageReceived");
+        return;
       }
 
-      const aiMsg: Message = {
-        id: Math.random().toString(36).substring(7),
-        role: "assistant",
-        content: response,
-        timestamp: new Date(),
-        generatedQuiz,
-      };
+      // General chat — streaming from /api/ai/chat
+      const chatRes = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
+        }),
+      });
 
-      setMessages((prev) => [...prev, aiMsg]);
-      setIsTyping(false);
-      playSound("messageReceived");
-    }, 1500);
+      if (chatRes.ok) {
+        const aiMsg: Message = {
+          id: Math.random().toString(36).substring(7),
+          role: "assistant",
+          content: "",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+
+        const reader = chatRes.body?.getReader();
+        if (reader) {
+          const decoder = new TextDecoder();
+          let accumulated = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            accumulated += chunk;
+
+            // Update the message content progressively
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiMsg.id ? { ...m, content: accumulated } : m
+              )
+            );
+          }
+        }
+
+        setIsTyping(false);
+        playSound("messageReceived");
+        return;
+      }
+    } catch {
+      // API failed — fall through to fallback
+    }
+
+    // Fallback: use mock responses when API is unavailable
+    const fallbackResponses: Record<string, string> = {
+      summarize: "I've analyzed your notes and created a comprehensive summary with key concepts, formulas, and important definitions.\n\n💡 **Tip:** Say \"Generate a quiz on [subject]\" to test your understanding!",
+      flashcard: "I've created 15 flashcards from your Biology materials covering cellular respiration, photosynthesis, and DNA replication.\n\n💡 **Tip:** Say \"Generate a quiz on Biology\" to test your knowledge!",
+      essay: "I can help structure your essay. Let's start with an outline:\n\n1. **Introduction** — Strong hook + thesis statement\n2. **Body Paragraph 1** — First main point with evidence\n3. **Body Paragraph 2** — Second main point with evidence\n4. **Body Paragraph 3** — Counterargument & rebuttal\n5. **Conclusion** — Restate thesis + final thoughts\n\n💡 **Tip:** Say \"Generate a quiz on Literature\" to improve your analytical skills!",
+      schedule: "Based on your upcoming deadlines and study patterns, here's an optimized study schedule:\n\n📅 **Monday:** Mathematics (2h) + Physics (1h)\n📅 **Tuesday:** Computer Science (3h)\n📅 **Wednesday:** Biology (2h) + Chemistry (1h)\n📅 **Thursday:** Review day — Flashcards\n📅 **Friday:** Practice quizzes on weak areas\n📅 **Weekend:** Deep focus sessions\n\n💡 **Tip:** Say \"Generate a quiz on [subject]\" for each study day!",
+      progress: "Your analytics show strong progress in Mathematics (78%) and Computer Science (85%). Physics (65%) needs attention.\n\n📊 **Recommendations:**\n• 3 additional Physics sessions this week\n• Focus on Quantum Mechanics and Thermodynamics\n• Daily flashcard review for Biology\n\n💡 **Tip:** Say \"Generate a quiz on Physics\" to practice your weak areas!",
+    };
+
+    let fallbackResponse = "I'll help you with that! Let me analyze your request and provide the best assistance.\n\n💡 **Pro tip:** Say \"Generate a quiz on [subject]\" to create real practice questions for any subject!";
+    for (const [key, value] of Object.entries(fallbackResponses)) {
+      if (content.toLowerCase().includes(key)) {
+        fallbackResponse = value;
+        break;
+      }
+    }
+
+    const msg: Message = {
+      id: Math.random().toString(36).substring(7),
+      role: "assistant",
+      content: fallbackResponse,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, msg]);
+    setIsTyping(false);
+    playSound("messageReceived");
   };
 
   return (

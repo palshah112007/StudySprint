@@ -50,29 +50,23 @@ export function ProgressBar({
       )}
       <div
         className={cn(
-          "w-full bg-surface-800 rounded-full overflow-hidden",
+          "w-full bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden",
           sizes[size]
         )}
       >
         <motion.div
           initial={animated ? { width: 0 } : undefined}
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          className={cn("h-full rounded-full relative", sizes[size])}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className={cn("h-full rounded-full relative overflow-hidden", sizes[size])}
           style={{
             background:
               color ||
-              "linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)",
+              "linear-gradient(90deg, #7C3AED 0%, #00D9F5 100%)",
           }}
         >
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%)",
-              animation: "shimmer 2s ease-in-out infinite",
-            }}
-          />
+          {/* Shimmer overlay */}
+          <div className="absolute inset-0 progress-fill-shimmer" />
         </motion.div>
       </div>
     </div>

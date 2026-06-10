@@ -322,28 +322,41 @@ export function HeroSection() {
           </Badge>
         </motion.div>
 
-        {/* Headline */}
+        {/* Headline — letter by letter stagger */}
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: { staggerChildren: 0.04, delayChildren: 0.2 },
+            },
+          }}
           className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6"
         >
-          <span className="text-surface-100">Study Smarter,</span>
-          <br />
-          <span className="gradient-text">Achieve Faster</span>
+          {"Your Neural Study OS".split("").map((char, i) => (
+            <motion.span
+              key={i}
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 },
+              }}
+              className={char === "N" || char === "S" || char === "O" ? "gradient-text" : "text-surface-100"}
+            >
+              {char === " " ? "\u00A0" : char}
+            </motion.span>
+          ))}
         </motion.h1>
 
-        {/* Subtitle */}
+        {/* Subtitle — cycling typewriter */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
           className="text-lg md:text-xl text-surface-400 max-w-2xl mx-auto mb-8 leading-relaxed"
         >
-          The AI-powered gamified ecosystem that transforms your study sessions into 
-          immersive sprints. Track progress, earn rewards, and unlock your full 
-          academic potential.
+          AI Quizzes. Smart Flashcards. Epic Focus.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -354,14 +367,13 @@ export function HeroSection() {
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8"
         >
           <Link href="/dashboard">
-            <Button variant="gradient" size="xl" glow className="group">
-              Start Your Sprint
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <Button variant="primary" size="xl" glow className="group">
+              Enter the OS →
             </Button>
           </Link>
-          <Button variant="outline" size="xl" className="group" onClick={handleWatchDemo}>
+          <Button variant="ghost" size="xl" className="group" onClick={handleWatchDemo}>
             <Play className="w-5 h-5" />
-            Watch Demo
+            Watch demo
           </Button>
         </motion.div>
 

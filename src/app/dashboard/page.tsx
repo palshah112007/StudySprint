@@ -33,9 +33,11 @@ import { Avatar } from "@/components/ui/Avatar";
 import { ContributionHeatmap } from "@/components/ui/ContributionHeatmap";
 import { ProblemsChart } from "@/components/ui/ProblemsChart";
 import { cn, formatXp, getLevelFromXp } from "@/lib/utils";
+import { Suspense } from "react";
 import { useSound } from "@/lib/useSound";
 import { toast } from "@/components/ui/Toaster";
 import { loadUserState } from "@/lib/persistence";
+import { ChartSkeleton, HeatmapSkeleton } from "@/components/ui/ChartSkeleton";
 
 const totalXp = 12450;
 const { level, currentXp, nextLevelXp } = getLevelFromXp(totalXp);
@@ -229,7 +231,9 @@ export default function DashboardPage() {
                       </Button>
                     </Link>
                   </div>
-                  <ProblemsChart stats={problemStats} />
+                  <Suspense fallback={<ChartSkeleton />}>
+                    <ProblemsChart stats={problemStats} />
+                  </Suspense>
                 </div>
               </CardContent>
             </Card>
@@ -318,7 +322,9 @@ export default function DashboardPage() {
                 </Badge>
               </CardHeader>
               <CardContent>
-                <ContributionHeatmap />
+                <Suspense fallback={<HeatmapSkeleton />}>
+                  <ContributionHeatmap />
+                </Suspense>
               </CardContent>
             </Card>
           </div>

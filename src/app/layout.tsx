@@ -1,15 +1,24 @@
-import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono, Geist } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/layout/Navigation";
 import { Toaster } from "@/components/ui/Toaster";
 import { KeyboardShortcuts } from "@/components/ui/KeyboardShortcuts";
+import { XPToastListener } from "@/components/ui/XPToastListener";
 import { ClientInit } from "@/components/ui/ClientInit";
 import { ThemeProvider } from "@/lib/theme";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
   display: "swap",
 });
 
@@ -19,14 +28,17 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#050507",
+};
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://studysprint.app"),
-  title: {
-    default: "StudySprint - AI-Powered Gamified Study OS",
-    template: "%s | StudySprint",
-  },
+  metadataBase: new URL("https://studysprint.vercel.app"),
+  title: "StudySprint — AI-Powered Study OS",
   description:
-    "StudySprint is a premium AI-powered gamified study operating system for focus sessions, adaptive quizzes, analytics, community, and academic momentum.",
+    "Gamified study platform with AI quizzes, spaced repetition flashcards, Pomodoro focus sessions, and progress analytics.",
   keywords: [
     "StudySprint",
     "AI study",
@@ -43,18 +55,36 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
-    title: "StudySprint - AI-Powered Gamified Study OS",
+    title: "StudySprint — AI-Powered Study OS",
     description:
-      "Supercharge your learning with AI-powered study tools, gamification, and deep focus sessions.",
+      "Gamified study platform with AI quizzes, spaced repetition flashcards, Pomodoro focus sessions, and progress analytics.",
     type: "website",
     siteName: "StudySprint",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "StudySprint — AI-Powered Study OS",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "StudySprint - AI-Powered Gamified Study OS",
+    title: "StudySprint — AI-Powered Study OS",
     description:
-      "Focus, learn, compete, and improve with an AI study operating system built for ambitious students.",
+      "Gamified study platform with AI quizzes, spaced repetition flashcards, Pomodoro focus sessions, and progress analytics.",
+    images: ["/og-image.png"],
   },
 };
 
@@ -69,7 +99,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('studysprint_theme');if(t&&JSON.parse(t)==='light')document.documentElement.classList.add('light')}catch(e){}` }} />
       </head>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} font-sans bg-surface-950 text-surface-100 antialiased`}
+        className={`${inter.variable} ${geist.variable} ${jetbrainsMono.variable} font-sans bg-surface-950 text-surface-100 antialiased`}
       >
         <ThemeProvider>
           <ClientInit />
@@ -77,6 +107,9 @@ export default function RootLayout({
           <main className="min-h-screen">{children}</main>
           <Toaster />
           <KeyboardShortcuts />
+          <XPToastListener />
+          <Analytics />
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>

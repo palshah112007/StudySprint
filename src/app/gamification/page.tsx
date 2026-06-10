@@ -92,18 +92,37 @@ const skillTrees = [
 ];
 
 function triggerConfetti() {
-  const colors = ["#6366f1", "#2dd4bf", "#f59e0b", "#ec4899", "#8b5cf6", "#10b981"];
+  const colors = ["#7C3AED", "#00D9F5", "#10B981", "#F59E0B", "#EF4444", "#A78BFA"];
   for (let i = 0; i < 30; i++) {
     const el = document.createElement("div");
-    el.className = "confetti-piece";
-    el.style.left = Math.random() * 100 + "vw";
-    el.style.top = "-10px";
-    el.style.background = colors[Math.floor(Math.random() * colors.length)];
-    el.style.width = Math.random() * 6 + 4 + "px";
-    el.style.height = Math.random() * 6 + 4 + "px";
-    el.style.setProperty("--drift", (Math.random() - 0.5) * 200 + "px");
-    el.style.animationDuration = Math.random() * 1.5 + 1.5 + "s";
+    el.style.cssText = `
+      position: fixed;
+      left: ${Math.random() * 100}vw;
+      top: -10px;
+      width: ${Math.random() * 6 + 4}px;
+      height: ${Math.random() * 6 + 4}px;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 9999;
+    `;
     document.body.appendChild(el);
+
+    const drift = (Math.random() - 0.5) * 200;
+    const duration = Math.random() * 1.5 + 1.5;
+
+    el.animate(
+      [
+        { transform: "translate(0, 0) rotate(0deg)", opacity: 1 },
+        { transform: `translate(${drift}px, 100vh) rotate(720deg)`, opacity: 0 },
+      ],
+      {
+        duration: duration * 1000,
+        easing: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+        fill: "forwards",
+      }
+    );
+
     setTimeout(() => el.remove(), 3000);
   }
 }
@@ -119,6 +138,9 @@ export default function GamificationPage() {
     setTimeout(() => {
       playSound("xp");
       triggerConfetti();
+      window.dispatchEvent(new CustomEvent("studysprint-xp-earned", {
+        detail: { xp, message: `Mission Complete! +${xp} XP` },
+      }));
       toast(`🎉 Earned ${xp} XP!`, "success");
       setClaimingMission(null);
     }, 800);

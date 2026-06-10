@@ -4,7 +4,7 @@ import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "outline" | "gradient";
+  variant?: "primary" | "secondary" | "ghost" | "outline" | "gradient" | "danger";
   size?: "sm" | "md" | "lg" | "xl";
   glow?: boolean;
   loading?: boolean;
@@ -28,15 +28,17 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const variants = {
       primary:
-        "bg-primary-600 text-white hover:bg-primary-500 active:bg-primary-700",
+        "bg-gradient-to-br from-[#7C3AED] to-[#6D28D9] text-white hover:brightness-110 shadow-[0_0_20px_rgba(124,58,237,0.4)]",
       secondary:
         "bg-surface-800 text-surface-200 hover:bg-surface-700 active:bg-surface-600 border border-surface-700/50",
       ghost:
-        "text-surface-400 hover:text-surface-200 hover:bg-surface-800/50",
+        "bg-transparent border border-[rgba(124,58,237,0.4)] text-[#A78BFA] hover:bg-[rgba(124,58,237,0.1)] hover:border-[rgba(124,58,237,0.8)]",
       outline:
         "border border-surface-700 text-surface-300 hover:bg-surface-800 hover:border-primary-500/30",
       gradient:
-        "bg-gradient-to-r from-primary-600 to-accent-600 text-white hover:from-primary-500 hover:to-accent-500",
+        "bg-gradient-to-r from-[#7C3AED] to-[#00D9F5] text-white hover:from-[#6D28D9] hover:to-[#00D9F5]",
+      danger:
+        "bg-transparent border border-[rgba(239,68,68,0.4)] text-[#F87171] hover:bg-[rgba(239,68,68,0.1)] hover:border-[rgba(239,68,68,0.8)]",
     };
 
     const sizes = {
@@ -55,8 +57,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           "disabled:opacity-50 disabled:cursor-not-allowed",
           variants[variant],
           sizes[size],
-          glow && variant === "primary" && "shadow-[0_0_20px_rgba(99,102,241,0.25)] hover:shadow-[0_0_30px_rgba(99,102,241,0.35)]",
-          glow && variant === "gradient" && "shadow-[0_0_20px_rgba(99,102,241,0.2)]",
+          glow && variant === "primary" && "shadow-[0_0_20px_rgba(124,58,237,0.4)] hover:shadow-[0_0_30px_rgba(124,58,237,0.5)]",
+          glow && (variant === "gradient" || variant === "ghost") && "shadow-[0_0_20px_rgba(124,58,237,0.2)]",
           "hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100",
           className
         )}

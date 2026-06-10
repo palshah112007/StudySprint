@@ -98,7 +98,7 @@ export function Navigation() {
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
           isScrolled || !isLanding
-            ? "bg-surface-950/80 backdrop-blur-xl border-b border-primary-500/10 shadow-lg shadow-black/10"
+            ? "neural-glass shadow-lg shadow-black/10"
             : "bg-transparent"
         )}
       >
@@ -110,7 +110,7 @@ export function Navigation() {
               className="flex items-center gap-2.5 group shrink-0"
               onClick={() => isLanding && playSound("click")}
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-primary-500/25 transition-shadow">
+              <div className="w-8 h-8 bg-gradient-to-br from-[#7C3AED] to-[#00D9F5] rounded-lg flex items-center justify-center shadow-lg shadow-[#7C3AED]/25 group-hover:shadow-[#7C3AED]/40 transition-shadow">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <span className="text-lg font-bold text-surface-100">
@@ -120,21 +120,20 @@ export function Navigation() {
 
             {/* Desktop Nav */}
             <div className="hidden lg:flex items-center gap-1 overflow-x-auto">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all",
-                    pathname === link.href
-                      ? "text-surface-100 bg-primary-500/10"
-                      : "text-surface-400 hover:text-surface-200 hover:bg-surface-800/50"
-                  )}
-                  onClick={() => playSound("click")}
-                >
-                  <link.icon className="w-4 h-4" />
-                  {link.label}
-                </Link>
+              {navLinks.map((link) => (                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      "flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all relative",
+                      pathname === link.href
+                        ? "text-[#A78BFA] border-l-2 border-[#7C3AED] pl-3"
+                        : "text-surface-400 hover:text-surface-200 hover:bg-surface-800/50 pl-3.5"
+                    )}
+                    onClick={() => playSound("click")}
+                  >
+                    <link.icon className="w-4 h-4" />
+                    {link.label}
+                  </Link>
               ))}
             </div>
 
@@ -283,10 +282,9 @@ export function Navigation() {
         isOpen={showAuth}
         onClose={() => setShowAuth(false)}
         defaultTab={authTab}
-      />
-
-      {/* Spacer for fixed nav */}
+      />        {/* Spacer for fixed nav */}
       {!isLanding && <div className="h-16" />}
+
     </>
   );
 }

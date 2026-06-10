@@ -209,6 +209,11 @@ export default function QuizPage() {
     saveQuizResult(result);
     setHistory((prev) => [...prev, result]);
 
+    // Dispatch XP toast event
+    window.dispatchEvent(new CustomEvent("studysprint-xp-earned", {
+      detail: { xp: xpEarned, message: `Quiz Complete! +${xpEarned} XP` },
+    }));
+
     if (correctCount === questions.length) {
       playSound("achievement");
       toast("🎉 Perfect score! You're incredible!", "success");

@@ -13,6 +13,7 @@ import {
   Trash2,
   Target,
   Eye,
+  Sparkles,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -85,6 +86,8 @@ export default function FlashcardsPage() {
   const [newDeckSubject, setNewDeckSubject] = useState("Mathematics");
   const [newCardFront, setNewCardFront] = useState("");
   const [newCardBack, setNewCardBack] = useState("");
+  const [aiNotes, setAiNotes] = useState("");
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const { playSound } = useSound();
 
   useEffect(() => {
@@ -170,6 +173,76 @@ export default function FlashcardsPage() {
     setNewDeckName("");
     setNewDeckModal(false);
     toast(`📚 Deck "${newDeck.name}" created!`, "success");
+  };
+
+  const generateWithAI = async () => {
+    if (!aiNotes.trim() || isGeneratingAI) return;
+    if (!newDeckName.trim()) {
+      toast("Please enter a deck name first.", "info");
+      return;
+    }
+
+    setIsGeneratingAI(true);
+    playSound("click");
+
+    try {
+      const res = await fetch("/api/ai/flashcards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ noteContent: aiNotes, count: 10 }),
+      });
+
+      if (!res.ok) throw new Error("API request failed");
+
+      const data = await res.json();
+      if (!data.cards || data.cards.length === 0) {
+        toast("No flashcards could be generated from your notes.", "info");
+        return;
+      }
+
+      // Create a new deck or find existing one
+      let targetDeck = decks.find((d) => d.id === selectedDeck?.id);
+      let updatedDecks: FlashcardDeck[];
+
+      const newCards = data.cards.map((c: any, i: number) => ({
+        id: `ai-${Date.now()}-${i}`,
+        front: c.front,
+        back: c.back,
+        box: 1,
+        nextReview: new Date().toISOString().split("T")[0],
+        lastReviewed: null,
+      }));
+
+      if (targetDeck) {
+        // Add cards to existing selected deck
+        updatedDecks = decks.map((d) =>
+          d.id === targetDeck!.id
+            ? { ...d, cards: [...d.cards, ...newCards] }
+            : d
+        );
+      } else {
+        // Create a new deck with the generated cards
+        const newDeck: FlashcardDeck = {
+          id: Math.random().toString(36).substring(7),
+          name: newDeckName || "AI Generated Cards",
+          subject: newDeckSubject,
+          cards: newCards,
+          createdAt: new Date().toISOString().split("T")[0],
+        };
+        updatedDecks = [...decks, newDeck];
+      }
+
+      setDecks(updatedDecks);
+      saveFlashcardDecks(updatedDecks);
+      setAiNotes("");
+      setIsGeneratingAI(false);
+      setNewDeckModal(false);
+      playSound("success");
+      toast(`🧠 Generated ${newCards.length} flashcards from your notes!`, "success");
+    } catch {
+      setIsGeneratingAI(false);
+      toast("Failed to generate flashcards. Check your API key.", "error");
+    }
   };
 
   const addCard = () => {
@@ -432,9 +505,51 @@ export default function FlashcardsPage() {
               ))}
             </select>
           </div>
-          <Button variant="gradient" size="lg" className="w-full" glow onClick={createDeck}>
-            Create Deck
-          </Button>
+
+          {/* AI Generate Section */}
+          <div className="border-t border-surface-700/30 pt-4">
+            <p className="text-xs font-semibold text-surface-400 mb-3 flex items-center gap-1.5">
+              <Brain className="w-3.5 h-3.5 text-accent-400" />
+              Generate with AI
+            </p>
+            <textarea
+              value={aiNotes}
+              onChange={(e) => setAiNotes(e.target.value)}
+              placeholder="Paste your study notes here — AI will extract key concepts and create flashcards..."
+              rows={4}
+              className="w-full bg-surface-800/50 border border-surface-700/50 rounded-xl px-4 py-2.5 text-sm text-surface-200 placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all resize-none"
+            />
+            <Button
+              variant="gradient"
+              size="sm"
+              className="w-full mt-2"
+              glow
+              onClick={generateWithAI}
+              disabled={!aiNotes.trim() || isGeneratingAI}
+            >
+              {isGeneratingAI ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Generate with AI
+                </>
+              )}
+            </Button>
+          </div>
+
+          <div className="border-t border-surface-700/30 pt-4">
+            <p className="text-xs text-surface-500 mb-3">Or create an empty deck to add cards manually</p>
+            <Button variant="secondary" size="lg" className="w-full" onClick={createDeck}>
+              Create Empty Deck
+            </Button>
+          </div>
         </div>
       </Modal>
 

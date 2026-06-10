@@ -24,9 +24,11 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { ProblemsChart } from "@/components/ui/ProblemsChart";
 import { ContributionHeatmap } from "@/components/ui/ContributionHeatmap";
 import { cn } from "@/lib/utils";
+import { Suspense } from "react";
 import { useSound } from "@/lib/useSound";
 import { toast } from "@/components/ui/Toaster";
 import { loadQuizResults, type QuizResult } from "@/lib/persistence";
+import { ChartSkeleton, HeatmapSkeleton } from "@/components/ui/ChartSkeleton";
 
 const monthlyData = [
   { month: "Jan", hours: 45, quizzes: 12, focus: 38, problems: 15 },
@@ -366,7 +368,9 @@ export default function AnalyticsPage() {
             <div className="grid lg:grid-cols-2 gap-6">
               <Card>
                 <CardContent>
-                  <ProblemsChart stats={problemStats} />
+                  <Suspense fallback={<ChartSkeleton />}>
+                    <ProblemsChart stats={problemStats} />
+                  </Suspense>
                 </CardContent>
               </Card>
 
@@ -382,7 +386,9 @@ export default function AnalyticsPage() {
                   </Badge>
                 </CardHeader>
                 <CardContent>
-                  <ContributionHeatmap />
+                  <Suspense fallback={<HeatmapSkeleton />}>
+                    <ContributionHeatmap />
+                  </Suspense>
                 </CardContent>
               </Card>
             </div>

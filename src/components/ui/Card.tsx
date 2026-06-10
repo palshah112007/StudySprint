@@ -22,12 +22,12 @@ export function Card({
 }: CardProps) {
   return (
     <motion.div
-      whileHover={hover ? { y: -2, transition: { duration: 0.2 } } : undefined}
+      whileHover={hover ? { y: -1, transition: { duration: 0.2 } } : undefined}
       className={cn(
-        "glass-card rounded-2xl p-6 relative overflow-hidden group",
-        glow && "glow-primary",
+        "neural-card p-6 relative overflow-hidden group",
+        glow && "shadow-[0_0_20px_rgba(124,58,237,0.15)]",
         gradient &&
-          "bg-gradient-to-br from-surface-800/80 via-surface-850/60 to-surface-900/80",
+          "bg-gradient-to-br from-surface-900/80 via-surface-850/60 to-surface-900/80",
         onClick && "cursor-pointer",
         className
       )}

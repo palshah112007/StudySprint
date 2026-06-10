@@ -16,15 +16,21 @@ import {
   Check,
   Clock,
   Sparkles,
+  Brain,
+  ChevronDown,
+  ListChecks,
+  Play,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useSound } from "@/lib/useSound";
 import { toast } from "@/components/ui/Toaster";
-import { saveNotes, loadNotes, type Note } from "@/lib/persistence";
+import type { GeneratedQuiz } from "@/lib/quiz-generator";
+import { saveNotes, loadNotes, addGeneratedQuiz, type Note } from "@/lib/persistence";
 
 const defaultNotes: Note[] = [
   {
@@ -57,6 +63,11 @@ export default function NotesPage() {
   const [editContent, setEditContent] = useState("");
   const [editSubject, setEditSubject] = useState("Mathematics");
   const [showNewNote, setShowNewNote] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summaryResult, setSummaryResult] = useState<{ summary: string; keyPoints: string[]; suggestedTags: string[] } | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
   const { playSound } = useSound();
 
   useEffect(() => {
@@ -132,6 +143,102 @@ export default function NotesPage() {
     saveNotes(updated);
     if (selectedNote?.id === noteId) setSelectedNote(null);
     toast("🗑️ Note deleted.", "info");
+  };
+
+  const summarizeNote = async (note: Note) => {
+    if (isSummarizing) return;
+    setIsSummarizing(true);
+    playSound("click");
+
+    try {
+      const res = await fetch("/api/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: note.content }),
+      });
+
+      if (!res.ok) throw new Error("Summarization failed");
+
+      const data = await res.json();
+      setSummaryResult({
+        summary: data.summary || "",
+        keyPoints: data.keyPoints || [],
+        suggestedTags: data.suggestedTags || [],
+      });
+      setShowSummary(true);
+      playSound("success");
+      toast("🧠 Note summarized successfully!", "success");
+    } catch {
+      toast("Failed to summarize note. Check your API key.", "info");
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const generateQuizFromNote = async (note: Note) => {
+    if (isGeneratingQuiz) return;
+    setIsGeneratingQuiz(true);
+    setGeneratedQuiz(null);
+    playSound("click");
+
+    try {
+      // Use the note subject for the quiz, sending a snippet of content as context
+      const res = await fetch("/api/ai/quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: note.subject,
+          topic: note.title,
+          content: note.content.slice(0, 5000),
+          difficulty: "mixed",
+          count: 8,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Quiz generation failed");
+
+      const data = await res.json();
+      if (!data.questions || data.questions.length === 0) {
+        toast("No questions could be generated.", "info");
+        return;
+      }
+
+      const icons: Record<string, string> = {
+        Mathematics: "📐", Physics: "⚛️", "Computer Science": "💻",
+        Biology: "🧬", Chemistry: "🧪", Literature: "📖", History: "🏛️", Languages: "🌍",
+      };
+
+      const quiz: GeneratedQuiz = {
+        id: `note-quiz-${Date.now()}`,
+        name: `${note.title} Quiz`,
+        subject: note.subject,
+        icon: icons[note.subject] || "📝",
+        questions: data.questions.map((q: any, i: number) => ({
+          id: `nq-${Date.now()}-${i}`,
+          question: q.question,
+          options: q.options,
+          correctIndex: q.correctIndex,
+          explanation: q.explanation,
+          subject: note.subject,
+          difficulty: (["easy", "medium", "hard"] as const)[i % 3],
+          topic: note.title,
+        })),
+        difficulty: "medium",
+        estimatedTime: Math.ceil(data.questions.length * 1.5),
+        xpReward: data.questions.length * 15,
+        generatedAt: new Date().toISOString(),
+        aiGenerated: true,
+      };
+
+      addGeneratedQuiz(quiz);
+      setGeneratedQuiz(quiz);
+      playSound("achievement");
+      toast(`🧠 Quiz "${quiz.name}" generated with ${quiz.questions.length} questions!`, "success");
+    } catch {
+      toast("Failed to generate quiz. Check your API key.", "info");
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
   };
 
   const subjectColors: Record<string, string> = {
@@ -210,7 +317,7 @@ export default function NotesPage() {
                 </h3>
                 <div className="space-y-2">
                   {pinnedNotes.map((note) => (
-                    <NoteCard key={note.id} note={note} subjectColors={subjectColors} onSelect={() => { playSound("click"); setSelectedNote(note); setIsEditing(false); setEditTitle(note.title); setEditContent(note.content); setEditSubject(note.subject); }} onPin={() => togglePin(note.id)} onDelete={() => deleteNote(note.id)} isActive={selectedNote?.id === note.id} />
+                    <NoteCard key={note.id} note={note} subjectColors={subjectColors} onSelect={() => { playSound("click"); setSelectedNote(note); setIsEditing(false); setEditTitle(note.title); setEditContent(note.content); setEditSubject(note.subject); setSummaryResult(null); setShowSummary(false); setGeneratedQuiz(null); setIsGeneratingQuiz(false); }} onPin={() => togglePin(note.id)} onDelete={() => deleteNote(note.id)} isActive={selectedNote?.id === note.id} />
                   ))}
                 </div>
               </div>
@@ -223,7 +330,7 @@ export default function NotesPage() {
                 )}
                 <div className="space-y-2">
                   {unpinnedNotes.map((note) => (
-                    <NoteCard key={note.id} note={note} subjectColors={subjectColors} onSelect={() => { playSound("click"); setSelectedNote(note); setIsEditing(false); setEditTitle(note.title); setEditContent(note.content); setEditSubject(note.subject); }} onPin={() => togglePin(note.id)} onDelete={() => deleteNote(note.id)} isActive={selectedNote?.id === note.id} />
+                    <NoteCard key={note.id} note={note} subjectColors={subjectColors} onSelect={() => { playSound("click"); setSelectedNote(note); setIsEditing(false); setEditTitle(note.title); setEditContent(note.content); setEditSubject(note.subject); setSummaryResult(null); setShowSummary(false); setGeneratedQuiz(null); setIsGeneratingQuiz(false); }} onPin={() => togglePin(note.id)} onDelete={() => deleteNote(note.id)} isActive={selectedNote?.id === note.id} />
                   ))}
                 </div>
               </div>
@@ -269,6 +376,40 @@ export default function NotesPage() {
                         <>
                           <Button variant="ghost" size="sm" onClick={() => { playSound("click"); setSelectedNote(null); }} className="lg:hidden">
                             <X className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => summarizeNote(selectedNote)}
+                            disabled={isSummarizing}
+                            className="text-accent-400 hover:text-accent-300"
+                            title="Summarize with AI"
+                          >
+                            {isSummarizing ? (
+                              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <Brain className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => generateQuizFromNote(selectedNote)}
+                            disabled={isGeneratingQuiz}
+                            className="text-amber-400 hover:text-amber-300"
+                            title="Generate Quiz from Note"
+                          >
+                            {isGeneratingQuiz ? (
+                              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              <ListChecks className="w-4 h-4" />
+                            )}
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => { playSound("click"); setIsEditing(true); }}>
                             <Edit2 className="w-4 h-4" />
@@ -326,6 +467,115 @@ export default function NotesPage() {
                       <div className="text-sm text-surface-300 leading-relaxed whitespace-pre-wrap font-mono bg-surface-800/30 rounded-xl p-4 min-h-[300px]">
                         {selectedNote.content}
                       </div>
+
+                      {/* Generated Quiz Card */}
+                      {generatedQuiz && (
+                        <div className="mt-4 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">{generatedQuiz.icon}</span>
+                            <div className="flex-1">
+                              <p className="text-xs font-semibold text-surface-200">
+                                {generatedQuiz.name}
+                              </p>
+                              <p className="text-[10px] text-surface-500">
+                                {generatedQuiz.questions.length} questions • {generatedQuiz.estimatedTime} min • +{generatedQuiz.xpReward} XP
+                              </p>
+                            </div>
+                          </div>
+                          <Link href="/quiz">
+                            <Button variant="gradient" size="sm" className="w-full" glow>
+                              <Play className="w-3.5 h-3.5" />
+                              Start Quiz
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+
+                      {/* AI Summary - Loading Skeleton */}
+                      {isSummarizing && !summaryResult && (
+                        <div className="mt-4 p-4 bg-accent-500/5 border border-accent-500/20 rounded-xl">
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="skeleton w-5 h-5 rounded" />
+                            <div className="skeleton w-28 h-4 rounded" />
+                          </div>
+                          <div className="space-y-2 mb-4">
+                            <div className="skeleton w-full h-3.5 rounded" />
+                            <div className="skeleton w-11/12 h-3.5 rounded" />
+                            <div className="skeleton w-3/4 h-3.5 rounded" />
+                          </div>
+                          <div className="mb-3">
+                            <div className="skeleton w-20 h-3 rounded mb-2" />
+                            <div className="space-y-1.5">
+                              {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                  <div className="skeleton w-1.5 h-1.5 rounded-full shrink-0" />
+                                  <div className="skeleton h-3 rounded" style={{ width: `${70 + i * 7}%` }} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex gap-1.5">
+                            {[1, 2, 3].map((i) => (
+                              <div key={i} className="skeleton w-16 h-5 rounded-full" />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* AI Summary - Result */}
+                      {summaryResult && showSummary && (
+                        <div className="mt-4 p-4 bg-accent-500/5 border border-accent-500/20 rounded-xl">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-accent-300 flex items-center gap-2">
+                              <Brain className="w-4 h-4" />
+                              AI Summary
+                            </h4>
+                            <button
+                              onClick={() => setShowSummary(false)}
+                              className="text-surface-500 hover:text-surface-300 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <p className="text-sm text-surface-200 leading-relaxed mb-4">
+                            {summaryResult.summary}
+                          </p>
+
+                          {summaryResult.keyPoints.length > 0 && (
+                            <div className="mb-3">
+                              <p className="text-xs font-medium text-surface-400 mb-2">Key Points</p>
+                              <ul className="space-y-1.5">
+                                {summaryResult.keyPoints.map((point, i) => (
+                                  <li key={i} className="flex items-start gap-2 text-xs text-surface-300">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-accent-400 shrink-0 mt-1.5" />
+                                    {point}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {summaryResult.suggestedTags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {summaryResult.suggestedTags.map((tag) => (
+                                <Badge key={tag} variant="accent" size="sm">{tag}</Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {summaryResult && !showSummary && (
+                        <button
+                          onClick={() => setShowSummary(true)}
+                          className="mt-3 w-full glass-light rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 text-xs text-accent-400 hover:text-accent-300 transition-colors"
+                        >
+                          <Brain className="w-3.5 h-3.5" />
+                          Show AI Summary
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </CardContent>

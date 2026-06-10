@@ -2,7 +2,28 @@
 
 > **An AI-powered gamified study operating system** — Focus sessions, adaptive quizzes, spaced-repetition flashcards, progress analytics, and a thriving study community.
 
-SprintStudy transforms the way students learn by combining a **Pomodoro focus room**, **AI-generated quizzes**, **smart flashcards**, **task management**, **gamification** (XP, levels, achievements, leaderboards), and **community features** into one seamless dark-themed experience.
+<div align="center">
+  <a href="https://studysprint.vercel.app">
+    <img src="https://img.shields.io/badge/Live%20Demo-vercel.app-7C3AED?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
+  </a>
+  <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpalshah112007%2FStudySprint">
+    <img src="https://img.shields.io/badge/Deploy%20to%20Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Deploy to Vercel" />
+  </a>
+</div>
+
+---
+
+## 📸 Screenshots
+
+> *Screenshots coming soon*
+
+| Dashboard | Focus Room | Quiz Center |
+|-----------|------------|-------------|
+| `[Preview]` | `[Preview]` | `[Preview]` |
+
+| Flashcards | Gamification | Analytics |
+|------------|--------------|-----------|
+| `[Preview]` | `[Preview]` | `[Preview]` |
 
 ---
 
@@ -23,57 +44,47 @@ SprintStudy transforms the way students learn by combining a **Pomodoro focus ro
 - Animated circular progress indicator
 - **Ambient soundscapes** — Rain, Waves, Lofi, and Nature (Web Audio API)
 - **Visual ambiance** — Deep Space, Ocean Depths, Forest, Clouds backgrounds
-- Animated floating particles
+- Animated floating particles and gradient orbs
 - Session statistics tracking
 - Fullscreen mode for distraction-free focus
-- Session logs saved to local storage
 
 ### 🧠 Quiz Center
 - **10 built-in quiz sets** across Mathematics, Physics, Computer Science, Biology, Chemistry, and Literature
-- **AI-generated quizzes** — ask the AI Assistant to create custom quizzes
+- **AI-generated quizzes** via OpenRouter (Gemini 2.0 Flash)
 - Real-time timer with visual urgency indicators
 - Detailed answer explanations
 - Scoring with animated circular results
 - Question review after completion
 - History tracking with XP rewards
-- Difficulty filtering (Easy, Medium, Hard, Mixed)
 
 ### 📚 Flashcards
 - **Spaced repetition** system with box levels (1-5)
-- 3 pre-loaded decks: Calculus Fundamentals, Quantum Physics, Algorithms
+- 3 pre-loaded decks
 - Flip animation with spring physics
 - "Know It / Don't Know" study flow
 - Keyboard shortcuts (Space to flip, arrow keys to navigate)
-- Create custom decks and cards
+- **AI-powered card generation** from notes
 - Mastery progress tracking
-- New deck creation modal
 
 ### 📝 Study Notes
 - Create, edit, search, and organize notes by subject
 - **Pin/unpin** important notes
-- Color-coded subjects
-- Tag system for organization
-- Full note viewer/editor with split-pane layout
-- Search across titles, content, and tags
+- Color-coded subjects with tag system
+- **AI summarization** and **quiz generation from notes**
 
 ### ✅ Tasks & Deadlines
 - Task management with **priority levels** (Low, Medium, High, Urgent)
 - **Due date tracking** with overdue warnings
 - Subject and category filtering
-- Sort by due date, priority, or subject
 - Completion tracking with XP rewards
-- Quick stats: active tasks, due today, overdue
-- Editable tasks with inline controls
 
 ### 🏆 Gamification
 - **XP & Level system** with 6 ranks (Bronze → Legend)
-- **12 achievements** with unlock animations
+- **12 achievements** with unlock animations and confetti
 - **5 daily missions** with claimable rewards
 - **3 weekly challenges** with XP bonuses
 - **Skill trees** — Focus Mastery, Quiz Champion, Social Butterfly
 - **Global leaderboard** with competitor profiles
-- Confetti effects on achievements
-- Sound effects for interactions
 
 ### 👥 Community
 - Study groups with member counts and active status
@@ -81,17 +92,13 @@ SprintStudy transforms the way students learn by combining a **Pomodoro focus ro
 - Live activity feed
 - **Live study rooms** — real-time virtual study sessions
 - Weekly challenges with prizes
-- Find friends modal with mutual connections
-- Community stats dashboard
 
 ### 🤖 AI Assistant
 - **AI-powered quiz generation** — type "Generate a quiz on [subject]" for real questions
 - **Quiz from notes** — generates questions based on your saved notes
+- **Streaming chat** responses via OpenRouter API
 - Smart subject detection from natural language
 - Quick action suggestions
-- Generated quiz history
-- Voice input simulation (mic button)
-- Subject-specific quiz generation (8 subjects supported)
 
 ### 📊 Analytics
 - Comprehensive study insights dashboard
@@ -103,14 +110,6 @@ SprintStudy transforms the way students learn by combining a **Pomodoro focus ro
 - **AI-powered insights** for improvement
 - Monthly goal tracking
 - Contribution heatmap
-
-### 👤 Profile
-- User profile with avatar, level, and stats
-- Skill levels by subject
-- Activity timeline
-- Achievement showcase
-- **Full settings panel** — theme toggle (dark/light), sound effects, volume control, keyboard shortcuts, notifications, privacy, study preferences, account management
-- Connected accounts management
 
 ---
 
@@ -124,10 +123,12 @@ SprintStudy transforms the way students learn by combining a **Pomodoro focus ro
 | **Animations** | Framer Motion |
 | **Icons** | Lucide React |
 | **Charts** | Recharts |
-| **Fonts** | Inter, JetBrains Mono (via next/font) |
+| **Fonts** | Inter, Geist, JetBrains Mono (via next/font) |
+| **AI** | OpenRouter (Gemini 2.0 Flash via OpenAI SDK) |
+| **Analytics** | @vercel/analytics, @vercel/speed-insights |
 | **Storage** | Local Storage (client-side persistence) |
 | **Sound** | Web Audio API (ambient soundscapes) |
-| **Theme** | Custom React Context (dark/light) |
+| **SEO** | Next.js Metadata API, sitemap.xml, robots.txt, OG images |
 
 ---
 
@@ -136,7 +137,7 @@ SprintStudy transforms the way students learn by combining a **Pomodoro focus ro
 ### Prerequisites
 
 - **Node.js** 18+ (recommended: 20 LTS)
-- **npm**, **yarn**, or **pnpm**
+- **pnpm**, **npm**, or **yarn**
 
 ### Installation
 
@@ -146,36 +147,51 @@ git clone https://github.com/palshah112007/StudySprint.git
 cd StudySprint
 
 # Install dependencies
-npm install
-# or
-yarn install
-# or
 pnpm install
+# or
+npm install
+```
+
+### Environment Variables
+
+```bash
+# Copy the template
+cp .env.example .env.local
+
+# Add your OpenRouter API key
+# Get one at: https://openrouter.ai/keys
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
 
 ### Development
 
 ```bash
-# Start the dev server (http://localhost:3000)
-npm run dev
+# Start the dev server with Turbopack (http://localhost:3000)
+pnpm dev
 ```
-
-The app will be available at [http://localhost:3000](http://localhost:3000).
 
 ### Build & Production
 
 ```bash
+# Type check
+pnpm run type-check
+
 # Build for production
-npm run build
+pnpm run build
 
 # Start production server
-npm run start
+pnpm run start
 ```
 
-### Lint / Type Check
+### Lint & Check
 
 ```bash
-npm run lint
+# Run all checks
+pnpm run check
+
+# Or individually:
+pnpm run lint
+pnpm run type-check
 ```
 
 ---
@@ -186,8 +202,11 @@ npm run lint
 src/
 ├── app/                          # Next.js App Router pages
 │   ├── page.tsx                  # Landing page
-│   ├── layout.tsx                # Root layout (theme, nav, fonts)
+│   ├── layout.tsx                # Root layout (theme, nav, fonts, analytics)
 │   ├── globals.css               # Global styles, Tailwind
+│   ├── sitemap.ts                # SEO sitemap
+│   ├── robots.ts                 # Robots.txt config
+│   ├── opengraph-image.tsx       # OG image for social sharing
 │   ├── dashboard/                # Main dashboard
 │   ├── focus-room/               # Pomodoro timer & ambiance
 │   ├── quiz/                     # Quiz center
@@ -204,13 +223,10 @@ src/
 │   ├── ui/                       # Reusable UI primitives
 │   │   ├── Card.tsx, Button.tsx, Badge.tsx
 │   │   ├── Modal.tsx, Avatar.tsx, ProgressBar.tsx
-│   │   ├── AnimatedCounter.tsx, ContributionHeatmap.tsx
-│   │   ├── ProblemsChart.tsx, KeyboardShortcuts.tsx
+│   │   ├── ChartSkeleton.tsx, ContributionHeatmap.tsx
+│   │   ├── ProblemsChart.tsx, KeyboardShortcuts.tsx, XPToast.tsx
 │   │   ├── AuthModal.tsx, Toaster.tsx, ClientInit.tsx
 │   ├── landing/                  # Landing page sections
-│   │   ├── HeroSection, FeaturesSection, StatsSection
-│   │   ├── GamificationSection, TestimonialsSection
-│   │   ├── PricingSection, FAQSection, Footer
 │   └── layout/
 │       └── Navigation.tsx        # App navigation
 ├── lib/
@@ -220,6 +236,13 @@ src/
 │   ├── useSound.ts               # Sound effects hook
 │   ├── theme.tsx                 # Theme context provider
 │   └── useToast.ts               # Toast notification hook
+└── api/
+    └── ai/                       # AI API routes (OpenRouter)
+        ├── chat/route.ts         # Streaming chat
+        ├── quiz/route.ts         # Quiz generation
+        ├── flashcards/route.ts   # Flashcard generation
+        ├── summarize/route.ts    # Note summarization
+        └── generate-quiz/route.ts# Legacy quiz generation
 ```
 
 ---
@@ -236,7 +259,17 @@ This project follows **Git Flow**:
 | `release/*` | Release preparation |
 | `hotfix/*` | Urgent production fixes |
 
-See full documentation in the project.
+---
+
+## 🚀 Deploy to Vercel
+
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fpalshah112007%2FStudySprint)
+
+1. Click the **Deploy** button above
+2. Connect your GitHub repository
+3. Set the environment variable:
+   - `OPENROUTER_API_KEY` — your OpenRouter API key
+4. Deploy! 🎉
 
 ---
 
