@@ -9,15 +9,19 @@
     "lint": "eslint src --ext .ts,.tsx --max-warnings 30",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
+    "seed:questions": "npx tsx scripts/seed-questions.ts",
     "check": "npm run type-check && npm run lint && npm run build"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.4.3",
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.1",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "ai": "^6.0.199",
     "clsx": "^2.1.1",
     "framer-motion": "^12.6.0",
+    "katex": "^0.17.0",
     "lucide-react": "^0.475.0",
     "next": "^15.2.0",
     "openai": "^6.42.0",
@@ -25,6 +29,7 @@
     "react-dom": "^19.0.0",
     "recharts": "^3.8.1",
     "sharp": "^0.34.5",
+    "svix": "^1.95.2",
     "tailwind-merge": "^3.0.2"
   },
   "overrides": {
@@ -33,6 +38,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.0",
     "@tailwindcss/postcss": "^4.0.0",
+    "@types/katex": "^0.16.8",
     "@types/node": "^22.13.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

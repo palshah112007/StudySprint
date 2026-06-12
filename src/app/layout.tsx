@@ -60,6 +60,7 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  manifest: '/manifest.json',
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

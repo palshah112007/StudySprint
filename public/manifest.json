@@ -1,0 +1,16 @@
+{
+  "name": "StudySprint",
+  "short_name": "StudySprint",
+  "description": "Your Neural Study OS",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#050507",
+  "theme_color": "#7C3AED",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/favicon-32x32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/og-image.png", "sizes": "1200x630", "type": "image/png", "purpose": "any" }
+  ]
+}
