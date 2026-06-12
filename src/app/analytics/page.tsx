@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { motion } from "framer-motion";
 import {
   BarChart3,
@@ -89,22 +89,16 @@ export default function AnalyticsPage() {
   const [activeChart, setActiveChart] = useState<"study" | "problems">("study");
   const { playSound } = useSound();
   const [isLoading, setIsLoading] = useState(true);
-  const [quizHistory, setQuizHistory] = useState<QuizResult[]>([]);
+  const [quizHistory] = useState<QuizResult[]>(() => loadQuizResults());
 
   useEffect(() => {
-    setQuizHistory(loadQuizResults());
-    const timer = setTimeout(() => setIsLoading(false), 500);
+    const timer = setTimeout(() => startTransition(() => setIsLoading(false)), 500);
     return () => clearTimeout(timer);
   }, []);
 
   // Compute real quiz stats from history
   const totalQuizzes = quizHistory.length;
-  const avgScore = totalQuizzes > 0
-    ? Math.round(quizHistory.reduce((s, r) => s + (r.correctAnswers / r.totalQuestions) * 100, 0) / totalQuizzes)
-    : 0;
-  const totalXp = quizHistory.reduce((s, r) => s + r.xpEarned, 0);
   const aiQuizzes = quizHistory.filter((r) => r.isAiGenerated).length;
-  const builtinQuizzes = totalQuizzes - aiQuizzes;
 
   // Compute subject scores from real data
   const subjectMap: Record<string, { total: number; correct: number; count: number }> = {};

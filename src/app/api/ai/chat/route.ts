@@ -1,32 +1,31 @@
-import OpenAI from "openai";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { createAiChatCompletion, hasAiProvider } from "@/lib/ai-provider";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY || "",
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://studysprint.app",
-    "X-Title": "StudySprint",
-  },
-});
+const SYSTEM_PROMPT = `You are StudyBot, an AI agent and knowledge solver for the StudySprint platform. Answer any user query fully and clearly, including academics, coding, general knowledge, practical problems, study help, and personal guidance.
 
-const SYSTEM_PROMPT = `You are StudyBot, an AI study assistant for the StudySprint platform. You help students learn by:
+Your goals:
+1. Answer questions accurately and completely.
+2. Solve problems step-by-step when needed.
+3. Provide practical help for both study-related and general-purpose queries.
+4. Use markdown formatting when helpful.
+5. Be concise, but expand when the user asks for more detail.
 
-1. Answering questions about any academic subject (Math, Physics, CS, Biology, Chemistry, Literature, History, Languages)
-2. Explaining concepts clearly and conversationally
-3. Creating study plans and schedules
-4. Providing practice problems
-5. Summarizing study materials
-6. Offering study tips and productivity advice
-
-Keep responses concise, encouraging, and focused on the student's learning. Use markdown for formatting when helpful. Keep responses under 300 words unless the user asks for more detail.`;
+If the user asks for quizzes, summaries, flashcards, or study plans, generate those as needed. Do not refuse because the request is outside a narrow study assistant scope.`;
 
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!checkRateLimit(ip)) {
+    return new Response(JSON.stringify({ error: "Too many requests. Wait 1 minute." }), {
+      status: 429, headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const { messages } = await request.json();
 
-    if (!process.env.OPENROUTER_API_KEY) {
+    if (!hasAiProvider()) {
       return new Response(
-        JSON.stringify({ error: "OPENROUTER_API_KEY is not configured" }),
+        JSON.stringify({ error: "No AI provider is configured" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -40,11 +39,9 @@ export async function POST(request: Request) {
       })),
     ];
 
-    // Streaming via OpenRouter
-    const stream = await client.chat.completions.create({
-      model: "google/gemini-2.0-flash-exp:free",
+    const { completion: stream } = await createAiChatCompletion({
       messages: formattedMessages.slice(-10),
-      max_tokens: 1024,
+      maxTokens: 1024,
       stream: true,
     });
 
@@ -67,8 +64,9 @@ export async function POST(request: Request) {
         "Cache-Control": "no-cache",
       },
     });
-  } catch (error) {
-    console.error("OpenRouter API error:", error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Route error:", msg);
     return new Response(
       JSON.stringify({ error: "Failed to get AI response" }),
       { status: 500, headers: { "Content-Type": "application/json" } }

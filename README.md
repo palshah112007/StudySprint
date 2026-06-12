@@ -158,9 +158,19 @@ npm install
 # Copy the template
 cp .env.example .env.local
 
-# Add your OpenRouter API key
-# Get one at: https://openrouter.ai/keys
+# Add your OpenRouter API key and any other provider keys you have
+# Get a free OpenRouter key at https://openrouter.ai/keys
 OPENROUTER_API_KEY=your_openrouter_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.3-70b-versatile
+GROK_API_KEY=your_grok_api_key_here
+XAI_API_KEY=your_xai_api_key_here
+XAI_MODEL=grok-4.3
+NVIDIA_API_KEY=your_nvidia_api_key_here
+NVIDIA_MODEL=your_nvidia_model_here
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4.1-mini
+AI_PROVIDER=openrouter
 ```
 
 ### Development

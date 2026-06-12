@@ -8,24 +8,15 @@ import {
   Flame,
   Target,
   Crown,
-  Medal,
   Star,
   Zap,
   Rocket,
   Swords,
   Shield,
-  Gem,
-  ChevronRight,
   Sparkles,
   Gift,
-  Users,
-  Brain,
-  Timer,
-  BookOpen,
-  Music,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Avatar } from "@/components/ui/Avatar";
@@ -35,15 +26,6 @@ import { toast } from "@/components/ui/Toaster";
 
 const totalXp = 12450;
 const { level, currentXp, nextLevelXp } = getLevelFromXp(totalXp);
-
-const ranks = [
-  { name: "Bronze", minXp: 0, icon: Shield, color: "from-amber-600 to-amber-800" },
-  { name: "Silver", minXp: 2000, icon: Medal, color: "from-slate-300 to-slate-500" },
-  { name: "Gold", minXp: 5000, icon: Star, color: "from-amber-400 to-amber-600" },
-  { name: "Platinum", minXp: 10000, icon: Gem, color: "from-cyan-400 to-blue-600" },
-  { name: "Diamond", minXp: 20000, icon: Crown, color: "from-primary-400 to-purple-600" },
-  { name: "Legend", minXp: 50000, icon: Rocket, color: "from-rose-400 to-red-600" },
-];
 
 const leaderboardData = [
   { rank: 1, name: "Sarah Chen", xp: 45800, level: 67, avatar: "SC", badge: "Legend" },

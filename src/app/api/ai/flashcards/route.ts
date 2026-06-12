@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY || "",
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://studysprint.app",
-    "X-Title": "StudySprint",
-  },
-});
+import { checkRateLimit } from "@/lib/rate-limit";
+import { createAiChatCompletion, hasAiProvider } from "@/lib/ai-provider";
 
 const FLASHCARD_PROMPT = `You are an expert at creating educational flashcards. Given notes content, generate question-answer pairs.
 
@@ -32,12 +24,19 @@ Rules:
 - Include key terms, definitions, formulas, and important facts`;
 
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!checkRateLimit(ip)) {
+    return new Response(JSON.stringify({ error: "Too many requests. Wait 1 minute." }), {
+      status: 429, headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const { noteContent, count } = await request.json();
 
-    if (!process.env.OPENROUTER_API_KEY) {
+    if (!hasAiProvider()) {
       return NextResponse.json(
-        { error: "OPENROUTER_API_KEY is not configured" },
+        { error: "No AI provider is configured" },
         { status: 500 }
       );
     }
@@ -54,19 +53,17 @@ export async function POST(request: Request) {
 
     const prompt = `Create ${cardCount} flashcards from the following notes. Extract key concepts, terms, definitions, and important facts.\n\nNotes:\n${truncatedContent}`;
 
-    const response = await client.chat.completions.create(
-      {
-        model: "google/gemini-2.0-flash-exp:free",
-        max_tokens: 4096,
-        messages: [
-          { role: "system", content: FLASHCARD_PROMPT },
-          { role: "user", content: prompt },
-        ],
-      },
-      { timeout: 30_000 }
-    );
+    const { completion } = await createAiChatCompletion({
+      messages: [
+        { role: "system", content: FLASHCARD_PROMPT },
+        { role: "user", content: prompt },
+      ],
+      maxTokens: 4096,
+      temperature: 0.7,
+      stream: false,
+    });
 
-    const text = response.choices?.[0]?.message?.content || "";
+    const text = completion.choices?.[0]?.message?.content || "";
 
     let result;
     try {
@@ -81,8 +78,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ cards: result.cards || [] });
-  } catch (error) {
-    console.error("Flashcard generation error:", error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Route error:", msg);
     return NextResponse.json(
       { error: "Failed to generate flashcards" },
       { status: 500 }

@@ -7,18 +7,12 @@ import {
   MessageCircle,
   Trophy,
   Swords,
-  Globe,
   UserPlus,
   Search,
   Hash,
-  Flame,
-  Zap,
   Clock,
-  BookOpen,
   Video,
-  MoreHorizontal,
   Check,
-  X,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -60,7 +54,6 @@ const challenges = [
 
 export default function SocialPage() {
   const [showFindFriends, setShowFindFriends] = useState(false);
-  const [joinRoom, setJoinRoom] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [joinedGroups, setJoinedGroups] = useState<string[]>(["Calculus Crew"]);
 
@@ -228,7 +221,6 @@ export default function SocialPage() {
                       whileHover={{ scale: 1.02 }}
                       className="glass-light rounded-xl p-4 text-center cursor-pointer group"
                       onClick={() => {
-                        setJoinRoom(room.name);
                         toast(`🎥 Joining "${room.name}" — ${room.users} students are studying right now!`, "success");
                       }}
                     >

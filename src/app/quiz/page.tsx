@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, startTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Brain,
@@ -144,14 +144,15 @@ export default function QuizPage() {
   const [quizStartTime, setQuizStartTime] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { playSound } = useSound();
-  const [history, setHistory] = useState<QuizResult[]>([]);
-  const [aiQuizzes, setAiQuizzes] = useState<GeneratedQuizType[]>([]);
+  const [history, setHistory] = useState<QuizResult[]>(() => loadQuizResults());
+  const [aiQuizzes] = useState<GeneratedQuizType[]>(() => loadGeneratedQuizzes());
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
+  const [subjectFilter, setSubjectFilter] = useState<string>("all");
 
-  useEffect(() => {
-    setHistory(loadQuizResults());
-    setAiQuizzes(loadGeneratedQuizzes());
-  }, []);
+  const subjectOptions = [
+    "all",
+    ...Array.from(new Set(quizSets.map((quiz) => quiz.subject))),
+  ];
 
   const startQuiz = useCallback((quiz: QuizSet) => {
     playSound("focusStart");
@@ -166,23 +167,6 @@ export default function QuizPage() {
     setQuizStartTime(Date.now());
     setScreen("quiz");
   }, [playSound, aiQuizzes]);
-
-  useEffect(() => {
-    if (screen === "quiz" && timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            finishQuiz();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [screen, timeLeft]);
 
   const finishQuiz = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -227,6 +211,23 @@ export default function QuizPage() {
 
     setScreen("results");
   }, [answers, questions, selectedQuiz, quizStartTime, playSound, aiQuizzes]);
+
+  useEffect(() => {
+    if (screen === "quiz" && timeLeft > 0) {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [screen, timeLeft]);
+
+  useEffect(() => {
+    if (screen === "quiz" && timeLeft === 0 && questions.length > 0) {
+      startTransition(() => finishQuiz());
+    }
+  }, [screen, timeLeft, finishQuiz, questions.length]);
 
   const handleAnswer = (index: number) => {
     if (selectedAnswer !== null) return;
@@ -416,11 +417,32 @@ export default function QuizPage() {
               )}
 
               {/* Built-in Quiz Sets */}
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-surface-200 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary-400" />
+                    Available Quizzes
+                  </h2>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {subjectOptions.map((subject) => (
+                    <button
+                      key={subject}
+                      onClick={() => { playSound("click"); setSubjectFilter(subject); }}
+                      className={cn(
+                        "px-2.5 py-1 rounded-lg text-[10px] font-medium capitalize transition-all",
+                        subjectFilter === subject
+                          ? "bg-primary-500/20 text-primary-300"
+                          : "text-surface-500 hover:text-surface-300"
+                      )}
+                    >
+                      {subject}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-surface-200 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary-400" />
-                  Available Quizzes
-                </h2>
+                <div className="text-sm text-surface-400">Filter by subject and difficulty to find quiz categories faster.</div>
                 <div className="flex gap-1.5">
                   {["all", "easy", "medium", "hard"].map((d) => (
                     <button
@@ -439,7 +461,10 @@ export default function QuizPage() {
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {quizSets.filter((q) => difficultyFilter === "all" || q.difficulty === difficultyFilter).map((quiz) => (
+                {quizSets
+                  .filter((q) => difficultyFilter === "all" || q.difficulty === difficultyFilter)
+                  .filter((q) => subjectFilter === "all" || q.subject === subjectFilter)
+                  .map((quiz) => (
                   <motion.div
                     key={quiz.id}
                     whileHover={{ scale: 1.02 }}

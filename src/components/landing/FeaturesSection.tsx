@@ -9,9 +9,7 @@ import {
   Users,
   BarChart3,
   Sparkles,
-  Shield,
   Target,
-  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";

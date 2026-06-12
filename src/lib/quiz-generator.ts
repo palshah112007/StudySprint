@@ -22,6 +22,10 @@ export interface GeneratedQuiz {
   aiGenerated: boolean;
 }
 
+import { getSyntheticSubjects, getSyntheticTopics, generateSyntheticQuiz } from "./synthetic-data";
+
+export type QuizDifficulty = "easy" | "medium" | "hard" | "mixed";
+
 // Fallback question banks for when the API is unavailable
 const questionBanks: Record<string, Record<string, GeneratedQuestion[]>> = {
   Mathematics: {
@@ -56,19 +60,21 @@ const questionBanks: Record<string, Record<string, GeneratedQuestion[]>> = {
 
 // Get all available topics for a subject
 export function getTopicsForSubject(subject: string): string[] {
-  return Object.keys(questionBanks[subject] || {});
+  const bankTopics = Object.keys(questionBanks[subject] || {});
+  const syntheticTopics = getSyntheticTopics(subject);
+  return Array.from(new Set([...bankTopics, ...syntheticTopics]));
 }
 
 // Get all available subjects
 export function getAllSubjects(): string[] {
-  return Object.keys(questionBanks);
+  return Array.from(new Set([...Object.keys(questionBanks), ...getSyntheticSubjects()]));
 }
 
 // Generate a quiz by calling the AI API first, falling back to hardcoded questions
 export async function generateQuiz(
   subject: string,
   topic: string,
-  difficulty: "easy" | "medium" | "hard" | "mixed" = "mixed",
+  difficulty: QuizDifficulty = "mixed",
   questionCount: number = 10
 ): Promise<GeneratedQuiz | null> {
   try {
@@ -83,22 +89,31 @@ export async function generateQuiz(
       const data = await res.json();
       if (data.questions && data.questions.length > 0) {
         const icons: Record<string, string> = {
-          Mathematics: "📐", Physics: "⚛️", "Computer Science": "💻",
-          Biology: "🧬", Chemistry: "🧪", Literature: "📖", History: "🏛️", Languages: "🌍",
+          Mathematics: "📐",
+          Physics: "⚛️",
+          "Computer Science": "💻",
+          Biology: "🧬",
+          Chemistry: "🧪",
+          Literature: "📖",
+          History: "🏛️",
+          Languages: "🌍",
         };
 
-        const questions: GeneratedQuestion[] = data.questions.map((q: any, i: number) => ({
-          id: `ai-${Date.now()}-${i}`,
-          question: q.question,
-          options: q.options,
-          correctIndex: q.correctIndex,
-          explanation: q.explanation,
-          subject,
-          difficulty: difficulty === "mixed"
-            ? (["easy", "medium", "hard"] as const)[i % 3]
-            : difficulty,
-          topic: topic === "all" ? "General" : topic,
-        }));
+        const questions: GeneratedQuestion[] = data.questions.map(
+          (q: { question: string; options: string[]; correctIndex: number; explanation: string }, i: number) => ({
+            id: `ai-${Date.now()}-${i}`,
+            question: q.question,
+            options: q.options,
+            correctIndex: q.correctIndex,
+            explanation: q.explanation,
+            subject,
+            difficulty:
+              difficulty === "mixed"
+                ? (["easy", "medium", "hard"] as const)[i % 3]
+                : difficulty,
+            topic: topic === "all" ? "General" : topic,
+          })
+        );
 
         return {
           id: `ai-quiz-${Date.now()}`,
@@ -118,7 +133,11 @@ export async function generateQuiz(
     // API failed, fall through to fallback
   }
 
-  // Fallback: use hardcoded question bank
+  const syntheticQuiz = generateSyntheticQuiz(subject, topic, difficulty, questionCount);
+  if (syntheticQuiz) {
+    return syntheticQuiz;
+  }
+
   return generateQuizFallback(subject, topic, difficulty, questionCount);
 }
 
@@ -126,10 +145,16 @@ export async function generateQuiz(
 function generateQuizFallback(
   subject: string,
   topic: string,
-  difficulty: "easy" | "medium" | "hard" | "mixed" = "mixed",
+  difficulty: QuizDifficulty = "mixed",
   questionCount: number = 10
 ): GeneratedQuiz | null {
   const subjectBank = questionBanks[subject];
+  const hasSynthetic = generateSyntheticQuiz(subject, topic, difficulty, questionCount) !== null;
+
+  if (!subjectBank && hasSynthetic) {
+    return generateSyntheticQuiz(subject, topic, difficulty, questionCount);
+  }
+
   if (!subjectBank) return null;
 
   let availableQuestions: GeneratedQuestion[] = [];
@@ -138,6 +163,10 @@ function generateQuizFallback(
     availableQuestions = Object.values(subjectBank).flat();
   } else {
     availableQuestions = subjectBank[topic] || [];
+  }
+
+  if (availableQuestions.length === 0 && hasSynthetic) {
+    return generateSyntheticQuiz(subject, topic, difficulty, questionCount);
   }
 
   if (difficulty !== "mixed") {
@@ -158,8 +187,14 @@ function generateQuizFallback(
   }));
 
   const icons: Record<string, string> = {
-    Mathematics: "📐", Physics: "⚛️", "Computer Science": "💻",
-    Biology: "🧬", Chemistry: "🧪", Literature: "📖", History: "🏛️", Languages: "🌍",
+    Mathematics: "📐",
+    Physics: "⚛️",
+    "Computer Science": "💻",
+    Biology: "🧬",
+    Chemistry: "🧪",
+    Literature: "📖",
+    History: "🏛️",
+    Languages: "🌍",
   };
 
   return {
@@ -189,6 +224,7 @@ export async function generateQuizFromNotes(
       body: JSON.stringify({
         subject,
         topic: noteContent.slice(0, 200),
+        content: noteContent.slice(0, 5000),
         difficulty: "mixed",
         count: questionCount,
       }),
@@ -197,7 +233,7 @@ export async function generateQuizFromNotes(
     if (res.ok) {
       const data = await res.json();
       if (data.questions && data.questions.length > 0) {
-        return data.questions.map((q: any, i: number) => ({
+        return data.questions.map((q: { question: string; options: string[]; correctIndex: number; explanation: string }, i: number) => ({
           id: `notes-${Date.now()}-${i}`,
           question: q.question,
           options: q.options,

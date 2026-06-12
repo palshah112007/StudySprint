@@ -51,7 +51,8 @@ export function ProblemsChart({
   className,
 }: ProblemsChartProps) {
   const stats = externalStats || defaultStats;
-  const dailyData = externalData || useMemo(() => generateDailyData(), []);
+  const generatedData = useMemo(() => generateDailyData(), []);
+  const dailyData = externalData || generatedData;
   const [chartType, setChartType] = useState<"problems" | "submissions">("problems");
 
   const totalSolved = stats.easy.solved + stats.medium.solved + stats.hard.solved;

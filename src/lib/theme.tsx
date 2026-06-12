@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, startTransition, type ReactNode } from "react";
 import { loadData, saveData } from "@/lib/persistence";
 
 type Theme = "dark" | "light";
@@ -24,13 +24,7 @@ export function useTheme() {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
 
-  useEffect(() => {
-    const saved = loadData<Theme>("theme", "dark");
-    setThemeState(saved);
-    applyTheme(saved);
-  }, []);
-
-  const applyTheme = (t: Theme) => {
+  const applyTheme = useCallback((t: Theme) => {
     const root = document.documentElement;
     if (t === "light") {
       root.classList.remove("dark");
@@ -39,13 +33,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.classList.remove("light");
       root.classList.add("dark");
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const saved = loadData<Theme>("theme", "dark");
+    startTransition(() => {
+      setThemeState(saved);
+    });
+    applyTheme(saved);
+  }, [applyTheme]);
 
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t);
     saveData("theme", t);
     applyTheme(t);
-  }, []);
+  }, [applyTheme]);
 
   const toggleTheme = useCallback(() => {
     const next = theme === "dark" ? "light" : "dark";

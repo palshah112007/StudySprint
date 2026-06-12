@@ -47,12 +47,12 @@ const sounds = [
   { name: "Nature", icon: TreePine, active: false },
 ];
 
-const particles = Array.from({ length: 20 }, (_, i) => ({
-  id: i,
-  left: `${(i * 37) % 100}%`,
-  top: `${(i * 53) % 100}%`,
-  duration: 3 + (i % 5),
-  delay: (i % 6) * 0.35,
+const particles = Array.from({ length: 20 }, (_, id) => ({
+  id,
+  left: `${(id * 37) % 100}%`,
+  top: `${(id * 53) % 100}%`,
+  duration: 3 + (id % 5),
+  delay: (id % 6) * 0.35,
 }));
 
 const sessionStatTextClasses = {
@@ -131,7 +131,7 @@ function startAmbientSound(type: string) {
     } else if (type === "lofi") {
       // Lofi: soft pad chord
       const frequencies = [261.63, 329.63, 392.00, 523.25];
-      frequencies.forEach((freq, i) => {
+      frequencies.forEach((freq) => {
         const o = ambientCtx!.createOscillator();
         o.type = "sine";
         o.frequency.setValueAtTime(freq, ambientCtx!.currentTime);

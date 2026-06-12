@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface AvatarProps {
@@ -82,7 +83,7 @@ export function Avatar({
         )}
       >
         {src ? (
-          <img src={src} alt={name} className="w-full h-full object-cover" />
+          <Image src={src} alt={name} width={80} height={80} className="w-full h-full object-cover" />
         ) : (
           getInitials(name)
         )}

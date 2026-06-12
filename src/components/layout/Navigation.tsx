@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Timer,
@@ -25,13 +25,13 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+import { useUser, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-import { AuthModal } from "@/components/ui/AuthModal";
-import { useSound } from "@/lib/useSound";
-import { setSoundEnabled } from "@/lib/useSound";
+import { useSound, setSoundEnabled } from "@/lib/useSound";
 import { loadSoundPreferences, saveSoundPreferences } from "@/lib/persistence";
 import { useTheme } from "@/lib/theme";
+import { hasValidClerkPublishableKey } from "@/lib/auth-config";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -50,31 +50,30 @@ const navLinks = [
 
 export function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [showAuth, setShowAuth] = useState(false);
-  const [authTab, setAuthTab] = useState<"signin" | "signup">("signin");
   const [soundOn, setSoundOn] = useState(true);
+  const clerkEnabled = hasValidClerkPublishableKey();
   const { playSound } = useSound();
   const { theme, toggleTheme } = useTheme();
 
   const isLanding = pathname === "/";
 
-  // Show auth modal when custom event fires from landing page
+  // Navigate to Clerk sign-in when custom event fires from landing page
   useEffect(() => {
     const handleOpenAuth = (e: CustomEvent) => {
       const tab = e.detail?.tab || "signin";
-      setAuthTab(tab);
-      setShowAuth(true);
+      router.push(tab === "signin" ? "/sign-in" : "/sign-up");
     };
     window.addEventListener("studysprint-open-auth", handleOpenAuth as EventListener);
     return () => window.removeEventListener("studysprint-open-auth", handleOpenAuth as EventListener);
-  }, []);
+  }, [router]);
 
   // Load saved sound preference
   useEffect(() => {
     const prefs = loadSoundPreferences();
-    setSoundOn(prefs.enabled);
+    startTransition(() => setSoundOn(prefs.enabled));
   }, []);
 
   // Track scroll for glass effect
@@ -166,35 +165,23 @@ export function Navigation() {
                 {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </button>
 
-              {/* Sign In */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="hidden sm:flex"
-                onClick={() => {
-                  playSound("click");
-                  setAuthTab("signin");
-                  setShowAuth(true);
-                }}
-              >
-                Sign In
-              </Button>
-
-              {/* Get Started */}
-              <Button
-                variant="gradient"
-                size="sm"
-                glow
-                className="hidden sm:flex"
-                onClick={() => {
-                  playSound("click");
-                  setAuthTab("signup");
-                  setShowAuth(true);
-                }}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Get Started
-              </Button>
+              {clerkEnabled ? (
+                <ClerkAccountControls onAction={() => playSound("click")} />
+              ) : (
+                <Button
+                  variant="gradient"
+                  size="sm"
+                  glow
+                  className="hidden sm:flex"
+                  onClick={() => {
+                    playSound("click");
+                    router.push("/dashboard");
+                  }}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Get Started
+                </Button>
+              )}
 
               {/* Mobile menu button */}
               <button
@@ -242,34 +229,30 @@ export function Navigation() {
                   </Link>
                 ))}
                 <div className="pt-3 flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => {
-                      playSound("click");
-                      setAuthTab("signin");
-                      setShowAuth(true);
-                      setIsOpen(false);
-                    }}
-                  >
-                    Sign In
-                  </Button>
-                  <Button
-                    variant="gradient"
-                    size="sm"
-                    glow
-                    className="flex-1"
-                    onClick={() => {
-                      playSound("click");
-                      setAuthTab("signup");
-                      setShowAuth(true);
-                      setIsOpen(false);
-                    }}
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Get Started
-                  </Button>
+                  {clerkEnabled ? (
+                    <ClerkAccountControls
+                      mobile
+                      onAction={() => {
+                        playSound("click");
+                        setIsOpen(false);
+                      }}
+                    />
+                  ) : (
+                    <Button
+                      variant="gradient"
+                      size="sm"
+                      glow
+                      className="flex-1"
+                      onClick={() => {
+                        playSound("click");
+                        setIsOpen(false);
+                        router.push("/dashboard");
+                      }}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Get Started
+                    </Button>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -277,14 +260,64 @@ export function Navigation() {
         </AnimatePresence>
       </nav>
 
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuth}
-        onClose={() => setShowAuth(false)}
-        defaultTab={authTab}
-      />        {/* Spacer for fixed nav */}
+      {/* Spacer for fixed nav */}
       {!isLanding && <div className="h-16" />}
 
+    </>
+  );
+}
+
+function ClerkAccountControls({
+  mobile = false,
+  onAction,
+}: {
+  mobile?: boolean;
+  onAction: () => void;
+}) {
+  const { isSignedIn } = useUser();
+
+  if (isSignedIn) {
+    return (
+      <UserButton
+        appearance={{
+          elements: {
+            userButtonAvatarBox: "w-8 h-8 rounded-xl border-2 border-primary-500/30",
+            userButtonTrigger: "hover:opacity-80 transition-opacity",
+            userButtonPopoverCard: "bg-surface-900 border border-surface-800 shadow-2xl shadow-black/20",
+            userButtonPopoverActionButton: "text-surface-300 hover:bg-surface-800",
+            userButtonPopoverActionButtonText: "text-surface-300",
+            userButtonPopoverFooter: "hidden",
+          },
+        }}
+      />
+    );
+  }
+
+  return (
+    <>
+      <SignInButton mode="modal">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={mobile ? "flex-1" : "hidden sm:flex"}
+          onClick={onAction}
+        >
+          Sign In
+        </Button>
+      </SignInButton>
+
+      <SignUpButton mode="modal">
+        <Button
+          variant="gradient"
+          size="sm"
+          glow
+          className={mobile ? "flex-1" : "hidden sm:flex"}
+          onClick={onAction}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          Get Started
+        </Button>
+      </SignUpButton>
     </>
   );
 }

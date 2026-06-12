@@ -7,6 +7,8 @@ import { KeyboardShortcuts } from "@/components/ui/KeyboardShortcuts";
 import { XPToastListener } from "@/components/ui/XPToastListener";
 import { ClientInit } from "@/components/ui/ClientInit";
 import { ThemeProvider } from "@/lib/theme";
+import { hasValidClerkPublishableKey } from "@/lib/auth-config";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -14,18 +16,21 @@ const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
+  preload: false,
 });
 
 const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist",
   display: "swap",
+  preload: false,
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
   display: "swap",
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -93,6 +98,19 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const app = (
+    <ThemeProvider>
+      <ClientInit />
+      <Navigation />
+      <main className="min-h-screen">{children}</main>
+      <Toaster />
+      <KeyboardShortcuts />
+      <XPToastListener />
+      <Analytics />
+      <SpeedInsights />
+    </ThemeProvider>
+  );
+
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
@@ -101,16 +119,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${geist.variable} ${jetbrainsMono.variable} font-sans bg-surface-950 text-surface-100 antialiased`}
       >
-        <ThemeProvider>
-          <ClientInit />
-          <Navigation />
-          <main className="min-h-screen">{children}</main>
-          <Toaster />
-          <KeyboardShortcuts />
-          <XPToastListener />
-          <Analytics />
-          <SpeedInsights />
-        </ThemeProvider>
+        {hasValidClerkPublishableKey() ? <ClerkProvider>{app}</ClerkProvider> : app}
       </body>
     </html>
   );

@@ -6,13 +6,9 @@ import {
   Flame,
   Trophy,
   Star,
-  Medal,
   Shield,
-  ArrowUp,
   Crown,
-  Gem,
   Sparkles,
-  Target,
   Swords,
   Rocket,
 } from "lucide-react";

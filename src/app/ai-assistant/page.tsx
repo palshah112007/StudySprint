@@ -16,10 +16,8 @@ import {
   Mic,
   Paperclip,
   Zap,
-  BarChart3,
   Play,
   Trophy,
-  Clock,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -50,18 +48,18 @@ interface Message {
 
 const suggestions = [
   { icon: Lightbulb, text: "Generate a quiz on Calculus" },
+  { icon: BookOpen, text: "Generate a quiz on Quantum Mechanics" },
+  { icon: Brain, text: "Generate a quiz on Algorithms" },
   { icon: BookOpen, text: "Generate a quiz from my notes" },
-  { icon: Brain, text: "Create flashcards for Biology" },
   { icon: FileText, text: "Help me with my essay" },
   { icon: ListChecks, text: "Make a study schedule" },
-  { icon: BarChart3, text: "Analyze my progress" },
 ];
 
 const initialMessages: Message[] = [
   {
     id: "1",
     role: "assistant",
-    content: "Hello! I'm your AI study assistant. I can help you with quizzes, summaries, flashcards, assignments, and more. What would you like to work on today?\n\n💡 **Tip:** Say \"Generate a quiz on [subject]\" and I'll create real questions for you to practice!",
+    content: "Hello! I'm your AI query agent. Ask me anything — whether it's study help, a coding question, a general knowledge query, or a practical problem. What do you want to solve today?\n\n💡 **Tip:** Try asking a question like \"Explain recursion\" or \"Generate a quiz on calculus\".",
     timestamp: new Date(),
   },
 ];
@@ -101,16 +99,26 @@ function detectQuizRequest(input: string): { isQuiz: boolean; subject: string | 
 
   // Detect specific topic
   let topic = "all";
-  if (lower.includes("derivative")) topic = "Calculus: Derivatives";
-  else if (lower.includes("integral")) topic = "Calculus: Integrals";
+  if (lower.includes("derivative") || lower.includes("derivatives")) topic = "Calculus: Derivatives";
+  else if (lower.includes("integral") || lower.includes("integrals")) topic = "Calculus: Integrals";
   else if (lower.includes("quantum")) topic = "Quantum Mechanics";
   else if (lower.includes("mechanics") && !lower.includes("quantum")) topic = "Classical Mechanics";
+  else if (lower.includes("thermodynamics")) topic = "Thermodynamics";
+  else if (lower.includes("electromagnetism") || lower.includes("electricity") || lower.includes("magnetism")) topic = "Electromagnetism";
   else if (lower.includes("algorithm")) topic = "Algorithms & Data Structures";
+  else if (lower.includes("data structure") || lower.includes("data structures")) topic = "Algorithms & Data Structures";
+  else if (lower.includes("database")) topic = "Databases";
+  else if (lower.includes("algebra")) topic = "Algebra";
+  else if (lower.includes("calculus")) topic = "Calculus";
   else if (lower.includes("cell")) topic = "Cell Biology";
   else if (lower.includes("genetic")) topic = "Genetics";
   else if (lower.includes("organic")) topic = "Organic Chemistry";
-  else if (lower.includes("shakespeare")) topic = "Shakespeare Studies";
+  else if (lower.includes("stoichiometry")) topic = "Stoichiometry";
+  else if (lower.includes("shakespeare")) topic = "Shakespeare";
   else if (lower.includes("literary")) topic = "Literary Analysis";
+  else if (lower.includes("spanish")) topic = "Spanish Vocabulary";
+  else if (lower.includes("grammar") || lower.includes("sentence")) topic = "English Grammar";
+  else if (lower.includes("world war") || lower.includes("ww2") || lower.includes("wwii")) topic = "World War II";
 
   // Detect difficulty
   let difficulty: Difficulty = "mixed";
@@ -129,11 +137,7 @@ export default function AIAssistantPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { playSound } = useSound();
-  const [generatedQuizzes, setGeneratedQuizzes] = useState<GeneratedQuiz[]>([]);
-
-  useEffect(() => {
-    setGeneratedQuizzes(loadGeneratedQuizzes());
-  }, []);
+  const [generatedQuizzes, setGeneratedQuizzes] = useState<GeneratedQuiz[]>(() => loadGeneratedQuizzes());
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -333,9 +337,9 @@ export default function AIAssistantPage() {
               <Bot className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-surface-100">AI Study Assistant</h1>
+              <h1 className="text-2xl font-bold text-surface-100">AI Query Agent</h1>
               <p className="text-sm text-surface-400">
-                Generate real quizzes, summaries, and study plans
+                Ask anything — from study help to general questions and problem solving
               </p>
             </div>
             <Badge variant="primary" size="md" pulse className="ml-auto">

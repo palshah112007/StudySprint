@@ -73,7 +73,14 @@ const defaultDecks: FlashcardDeck[] = [
 ];
 
 export default function FlashcardsPage() {
-  const [decks, setDecks] = useState<FlashcardDeck[]>([]);
+  const [decks, setDecks] = useState<FlashcardDeck[]>(() => {
+    const loaded = loadFlashcardDecks();
+    if (loaded.length === 0) {
+      saveFlashcardDecks(defaultDecks);
+      return defaultDecks;
+    }
+    return loaded;
+  });
   const [view, setView] = useState<"browse" | "study" | "create">("browse");
   const [selectedDeck, setSelectedDeck] = useState<FlashcardDeck | null>(null);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -90,15 +97,6 @@ export default function FlashcardsPage() {
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const { playSound } = useSound();
 
-  useEffect(() => {
-    const loaded = loadFlashcardDecks();
-    if (loaded.length === 0) {
-      setDecks(defaultDecks);
-      saveFlashcardDecks(defaultDecks);
-    } else {
-      setDecks(loaded);
-    }
-  }, []);
 
   const startStudy = useCallback((deck: FlashcardDeck) => {
     playSound("focusStart");
@@ -201,10 +199,10 @@ export default function FlashcardsPage() {
       }
 
       // Create a new deck or find existing one
-      let targetDeck = decks.find((d) => d.id === selectedDeck?.id);
+      const targetDeck = decks.find((d) => d.id === selectedDeck?.id);
       let updatedDecks: FlashcardDeck[];
 
-      const newCards = data.cards.map((c: any, i: number) => ({
+      const newCards = data.cards.map((c: { front: string; back: string }, i: number) => ({
         id: `ai-${Date.now()}-${i}`,
         front: c.front,
         back: c.back,

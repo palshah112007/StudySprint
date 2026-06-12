@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY || "",
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://studysprint.app",
-    "X-Title": "StudySprint",
-  },
-});
+import { checkRateLimit } from "@/lib/rate-limit";
+import { createAiChatCompletion, hasAiProvider } from "@/lib/ai-provider";
 
 const SUMMARIZE_PROMPT = `You are an expert study material summarizer. Given content from study notes, create a structured summary.
 
@@ -27,12 +19,19 @@ Rules:
 - Highlight any formulas, definitions, or important terms`;
 
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!checkRateLimit(ip)) {
+    return new Response(JSON.stringify({ error: "Too many requests. Wait 1 minute." }), {
+      status: 429, headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const { content } = await request.json();
 
-    if (!process.env.OPENROUTER_API_KEY) {
+    if (!hasAiProvider()) {
       return NextResponse.json(
-        { error: "OPENROUTER_API_KEY is not configured" },
+        { error: "No AI provider is configured" },
         { status: 500 }
       );
     }
@@ -48,19 +47,17 @@ export async function POST(request: Request) {
 
     const prompt = `Summarize the following study notes:\n\n${truncatedContent}`;
 
-    const response = await client.chat.completions.create(
-      {
-        model: "google/gemini-2.0-flash-exp:free",
-        max_tokens: 2048,
-        messages: [
-          { role: "system", content: SUMMARIZE_PROMPT },
-          { role: "user", content: prompt },
-        ],
-      },
-      { timeout: 30_000 }
-    );
+    const { completion } = await createAiChatCompletion({
+      messages: [
+        { role: "system", content: SUMMARIZE_PROMPT },
+        { role: "user", content: prompt },
+      ],
+      maxTokens: 2048,
+      temperature: 0.7,
+      stream: false,
+    });
 
-    const text = response.choices?.[0]?.message?.content || "";
+    const text = completion.choices?.[0]?.message?.content || "";
 
     let result;
     try {
@@ -79,8 +76,9 @@ export async function POST(request: Request) {
       keyPoints: result.keyPoints || [],
       suggestedTags: result.suggestedTags || [],
     });
-  } catch (error) {
-    console.error("Summarization error:", error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Route error:", msg);
     return NextResponse.json(
       { error: "Failed to summarize content" },
       { status: 500 }

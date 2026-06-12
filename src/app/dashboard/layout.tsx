@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DashboardAuth } from "./auth-guard";
 
 export const metadata: Metadata = {
   title: "Dashboard | StudySprint",
@@ -11,5 +12,5 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <DashboardAuth>{children}</DashboardAuth>;
 }

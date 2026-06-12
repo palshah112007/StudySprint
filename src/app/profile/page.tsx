@@ -25,8 +25,6 @@ import {
   BarChart3,
   Users,
   Target,
-  Sparkles,
-  ChevronRight,
   ChevronDown,
   Bell,
   Volume2,

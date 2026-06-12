@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY || "",
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://studysprint.app",
-    "X-Title": "StudySprint",
-  },
-});
+import { checkRateLimit } from "@/lib/rate-limit";
+import { createAiChatCompletion, hasAiProvider } from "@/lib/ai-provider";
 
 const QUIZ_PROMPT = `You are an expert quiz generator. Generate multiple-choice quiz questions.
 
@@ -33,12 +25,19 @@ Rules:
 - Make questions challenging but fair`;
 
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!checkRateLimit(ip)) {
+    return new Response(JSON.stringify({ error: "Too many requests. Wait 1 minute." }), {
+      status: 429, headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const { subject, topic, difficulty, count, content } = await request.json();
 
-    if (!process.env.OPENROUTER_API_KEY) {
+    if (!hasAiProvider()) {
       return NextResponse.json(
-        { error: "OPENROUTER_API_KEY is not configured" },
+        { error: "No AI provider is configured" },
         { status: 500 }
       );
     }
@@ -55,24 +54,24 @@ ${content.slice(0, 6000)}
 
 Difficulty level: ${difficulty || "mixed"}
 
+Return ONLY valid JSON with the fields question, options, correctIndex, and explanation. Use exactly 4 answer options per question.
+
 Generate ${questionCount} questions that test comprehension of the material above.`;
     } else {
-      prompt = `Generate a quiz on "${subject}"${topic && topic !== "all" ? `, topic: "${topic}"` : ""} at "${difficulty || "mixed"}" difficulty. Generate exactly ${questionCount} questions.`;
+      prompt = `Generate a quiz on "${subject}"${topic && topic !== "all" ? `, topic: "${topic}"` : ""} at "${difficulty || "mixed"}" difficulty. Generate exactly ${questionCount} questions. Return ONLY valid JSON with the field structure requested, and avoid markdown or code fences.`;
     }
 
-    const response = await client.chat.completions.create(
-      {
-        model: "google/gemini-2.0-flash-exp:free",
-        max_tokens: 4096,
-        messages: [
-          { role: "system", content: QUIZ_PROMPT },
-          { role: "user", content: prompt },
-        ],
-      },
-      { timeout: 30_000 }
-    );
+    const { completion } = await createAiChatCompletion({
+      messages: [
+        { role: "system", content: QUIZ_PROMPT },
+        { role: "user", content: prompt },
+      ],
+      maxTokens: 4096,
+      temperature: 0.7,
+      stream: false,
+    });
 
-    const text = response.choices?.[0]?.message?.content || "";
+    const text = completion.choices?.[0]?.message?.content || "";
 
     // Parse the JSON response
     let quiz;
@@ -88,8 +87,9 @@ Generate ${questionCount} questions that test comprehension of the material abov
     }
 
     return NextResponse.json({ questions: quiz.questions });
-  } catch (error) {
-    console.error("Quiz generation error:", error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Route error:", msg);
     return NextResponse.json(
       { error: "Failed to generate quiz" },
       { status: 500 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, startTransition } from "react";
 import { XPToast } from "./XPToast";
 import { createPortal } from "react-dom";
 
@@ -15,7 +15,7 @@ export function XPToastListener() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    startTransition(() => setMounted(true));
   }, []);
 
   const handleXPEarned = useCallback(

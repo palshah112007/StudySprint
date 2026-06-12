@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 
-const planNames = ["Starter", "Pro", "Max"] as const;
-
 const plans = [
   {
     name: "Starter",
@@ -172,26 +170,27 @@ export function PricingSection() {
                 ))}
               </ul>
 
-              <Button
-                variant={plan.popular ? "gradient" : "outline"}
-                size="lg"
-                className="w-full"
-                glow={plan.popular}
-                onClick={() => {
-                  if (plan.price === 0) {
-                    // Free plan - navigate directly
+              {plan.price === 0 ? (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full"
+                  onClick={() => {
                     window.location.href = "/dashboard";
-                  } else {
-                    window.dispatchEvent(
-                      new CustomEvent("studysprint-open-auth", {
-                        detail: { tab: "signup" },
-                      })
-                    );
-                  }
-                }}
-              >
-                {plan.cta}
-              </Button>
+                  }}
+                >
+                  Get Started Free
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-full"
+                  disabled
+                >
+                  Coming Soon
+                </Button>
+              )}
             </motion.div>
           ))}
         </div>

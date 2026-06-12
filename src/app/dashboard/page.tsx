@@ -5,11 +5,8 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   Brain,
-  Zap,
   Trophy,
-  Clock,
   Target,
-  BookOpen,
   TrendingUp,
   Calendar,
   Sparkles,
@@ -25,11 +22,12 @@ import {
   FileText,
   Bot,
 } from "lucide-react";
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { Avatar } from "@/components/ui/Avatar";
+
 import { ContributionHeatmap } from "@/components/ui/ContributionHeatmap";
 import { ProblemsChart } from "@/components/ui/ProblemsChart";
 import { cn, formatXp, getLevelFromXp } from "@/lib/utils";

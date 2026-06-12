@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, startTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 interface XPToastProps {
   xp: number;
@@ -37,7 +36,7 @@ export function XPToast({
       x: Math.random() * 200 - 100,
       color: colors[i % colors.length],
     }));
-    setConfettiPieces(pieces);
+    startTransition(() => setConfettiPieces(pieces));
 
     // Auto-dismiss
     const timer = setTimeout(() => {

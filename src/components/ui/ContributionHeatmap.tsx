@@ -54,11 +54,6 @@ const levelColors: Record<number, string> = {
   4: "bg-primary-400 hover:bg-primary-300",
 };
 
-const monthLabels = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
 const dayLabels = ["", "Mon", "", "Wed", "", "Fri", ""];
 
 export function ContributionHeatmap({

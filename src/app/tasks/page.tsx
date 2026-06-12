@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ListChecks,
@@ -11,7 +11,6 @@ import {
   Flag,
   Trash2,
   Edit2,
-  ChevronDown,
   BookOpen,
   AlertTriangle,
 
@@ -69,7 +68,14 @@ const subjectColors: Record<string, string> = {
 };
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const loaded = loadTasks();
+    if (loaded.length === 0) {
+      saveTasks(defaultTasks);
+      return defaultTasks;
+    }
+    return loaded;
+  });
   const [filter, setFilter] = useState<"all" | "active" | "completed">("active");
   const [sortBy, setSortBy] = useState<"dueDate" | "priority" | "subject">("dueDate");
   const [filterSubject, setFilterSubject] = useState("All");
@@ -82,16 +88,19 @@ export default function TasksPage() {
   const [newDueDate, setNewDueDate] = useState("");
   const [newCategory, setNewCategory] = useState<Task["category"]>("assignment");
   const { playSound } = useSound();
+  const taskIdCounter = useRef(0);
+  const now = useMemo(() => new Date(), []);
 
-  useEffect(() => {
-    const loaded = loadTasks();
-    if (loaded.length === 0) {
-      setTasks(defaultTasks);
-      saveTasks(defaultTasks);
-    } else {
-      setTasks(loaded);
-    }
-  }, []);
+  const resetForm = () => {
+    setNewTitle("");
+    setNewDescription("");
+    setNewSubject("Mathematics");
+    setNewPriority("medium");
+    setNewDueDate("");
+    setNewCategory("assignment");
+    setShowNewTask(false);
+    setEditingTask(null);
+  };
 
   const toggleComplete = useCallback((taskId: string) => {
     playSound("click");
@@ -118,18 +127,19 @@ export default function TasksPage() {
     toast("🗑️ Task deleted.", "info");
   }, [tasks, playSound]);
 
-  const createTask = () => {
+  const createTask = useCallback(() => {
     if (!newTitle.trim()) return;
     playSound("success");
+    taskIdCounter.current += 1;
     const task: Task = {
-      id: Math.random().toString(36).substring(7),
+      id: `task-${taskIdCounter.current}`,
       title: newTitle,
       description: newDescription,
       subject: newSubject,
       priority: newPriority,
-      dueDate: newDueDate || new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
+      dueDate: newDueDate || new Date(now.getTime() + 7 * 86400000).toISOString().split("T")[0],
       completed: false,
-      createdAt: new Date().toISOString().split("T")[0],
+      createdAt: now.toISOString().split("T")[0],
       category: newCategory,
     };
     const updated = [task, ...tasks];
@@ -137,7 +147,7 @@ export default function TasksPage() {
     saveTasks(updated);
     resetForm();
     toast("📋 Task created!", "success");
-  };
+  }, [newTitle, newDescription, newSubject, newPriority, newDueDate, newCategory, tasks, playSound, now]);
 
   const updateTask = () => {
     if (!editingTask || !newTitle.trim()) return;
@@ -149,17 +159,6 @@ export default function TasksPage() {
     saveTasks(updated);
     resetForm();
     toast("✅ Task updated!", "success");
-  };
-
-  const resetForm = () => {
-    setNewTitle("");
-    setNewDescription("");
-    setNewSubject("Mathematics");
-    setNewPriority("medium");
-    setNewDueDate("");
-    setNewCategory("assignment");
-    setShowNewTask(false);
-    setEditingTask(null);
   };
 
   const openEdit = (task: Task) => {
@@ -174,13 +173,13 @@ export default function TasksPage() {
     setShowNewTask(true);
   };
 
-  const getDaysUntil = (date: string) => {
-    const diff = Math.ceil((new Date(date).getTime() - Date.now()) / 86400000);
+  const getDaysUntil = useCallback((date: string) => {
+    const diff = Math.ceil((new Date(date).getTime() - now.getTime()) / 86400000);
     if (diff < 0) return "Overdue";
     if (diff === 0) return "Today";
     if (diff === 1) return "Tomorrow";
     return `${diff} days`;
-  };
+  }, [now]);
 
   const filteredTasks = tasks
     .filter((t) => {
@@ -198,14 +197,10 @@ export default function TasksPage() {
       return a.subject.localeCompare(b.subject);
     });
 
-  const activeTasks = tasks.filter((t) => !t.completed);
-  const completedTasks = tasks.filter((t) => t.completed);
-  const overdueTasks = activeTasks.filter((t) => new Date(t.dueDate) < new Date());
-  const dueToday = activeTasks.filter((t) => {
-    const d = new Date(t.dueDate);
-    const now = new Date();
-    return d.toDateString() === now.toDateString();
-  });
+  const activeTasks = useMemo(() => tasks.filter((t) => !t.completed), [tasks]);
+  const completedTasks = useMemo(() => tasks.filter((t) => t.completed), [tasks]);
+  const overdueTasks = useMemo(() => activeTasks.filter((t) => new Date(t.dueDate) < now), [activeTasks, now]);
+  const dueToday = useMemo(() => activeTasks.filter((t) => new Date(t.dueDate).toDateString() === now.toDateString()), [activeTasks, now]);
 
   return (
     <div className="min-h-screen bg-surface-950 page-enter">

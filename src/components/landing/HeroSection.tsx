@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion";
+import { useRef, useState } from "react";
+import { motion, useMotionValue, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
-  ArrowRight,
   Sparkles,
   Zap,
   Star,
-  TrendingUp,
   Clock,
   Trophy,
   Brain,
@@ -262,12 +260,6 @@ export function HeroSection() {
   const [showDemo, setShowDemo] = useState(false);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-
-  const springX = useSpring(mouseX, { stiffness: 50, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 50, damping: 20 });
-
-  const rotateX = useTransform(springY, [-0.5, 0.5], [2, -2]);
-  const rotateY = useTransform(springX, [-0.5, 0.5], [-2, 2]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = containerRef.current?.getBoundingClientRect();

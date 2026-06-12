@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   FileText,
   Plus,
@@ -11,11 +11,9 @@ import {
   Trash2,
   Edit2,
   Tag,
-  Calendar,
   X,
   Check,
   Clock,
-  Sparkles,
   Brain,
   ChevronDown,
   ListChecks,
@@ -29,8 +27,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useSound } from "@/lib/useSound";
 import { toast } from "@/components/ui/Toaster";
-import type { GeneratedQuiz } from "@/lib/quiz-generator";
 import { saveNotes, loadNotes, addGeneratedQuiz, type Note } from "@/lib/persistence";
+import type { GeneratedQuiz } from "@/lib/quiz-generator";
 
 const defaultNotes: Note[] = [
   {
@@ -54,7 +52,14 @@ const defaultNotes: Note[] = [
 const subjects = ["All", "Mathematics", "Physics", "Computer Science", "Biology", "Chemistry", "Literature"];
 
 export default function NotesPage() {
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [notes, setNotes] = useState<Note[]>(() => {
+    const loaded = loadNotes();
+    if (loaded.length === 0) {
+      saveNotes(defaultNotes);
+      return defaultNotes;
+    }
+    return loaded;
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("All");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -69,16 +74,6 @@ export default function NotesPage() {
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState<GeneratedQuiz | null>(null);
   const { playSound } = useSound();
-
-  useEffect(() => {
-    const loaded = loadNotes();
-    if (loaded.length === 0) {
-      setNotes(defaultNotes);
-      saveNotes(defaultNotes);
-    } else {
-      setNotes(loaded);
-    }
-  }, []);
 
   const filteredNotes = notes.filter((note) => {
     const matchesSearch = note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -213,7 +208,7 @@ export default function NotesPage() {
         name: `${note.title} Quiz`,
         subject: note.subject,
         icon: icons[note.subject] || "📝",
-        questions: data.questions.map((q: any, i: number) => ({
+        questions: data.questions.map((q: { question: string; options: string[]; correctIndex: number; explanation: string }, i: number) => ({
           id: `nq-${Date.now()}-${i}`,
           question: q.question,
           options: q.options,
